@@ -1,6 +1,6 @@
+
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { College } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Plus, Building2 } from "lucide-react";
 import { useColleges } from "@/hooks/useColleges";
 import { CollegeForm } from "@/components/colleges/CollegeForm";
 
@@ -77,25 +77,38 @@ export default function Colleges() {
             <TableCaption>A list of your colleges.</TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">Logo</TableHead>
+                <TableHead className="w-[60px]">Icon</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Description</TableHead>
+                <TableHead>City</TableHead>
+                <TableHead>State</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {colleges?.map((college) => (
                 <TableRow key={college.id}>
                   <TableCell>
-                    <img
-                      src={college.logo_url}
-                      alt={`${college.name} Logo`}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-blue-600" />
+                    </div>
                   </TableCell>
-                  <TableCell>{college.name}</TableCell>
-                  <TableCell>{college.location}</TableCell>
-                  <TableCell>{college.description}</TableCell>
+                  <TableCell className="font-medium">{college.name}</TableCell>
+                  <TableCell>{college.city || 'N/A'}</TableCell>
+                  <TableCell>{college.state || 'N/A'}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      college.status === 'closed_won' ? 'bg-green-100 text-green-800' :
+                      college.status === 'negotiation' ? 'bg-yellow-100 text-yellow-800' :
+                      college.status === 'lost' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {college.status.replace('_', ' ')}
+                    </span>
+                  </TableCell>
+                  <TableCell>{college.email || 'N/A'}</TableCell>
+                  <TableCell>{college.phone || 'N/A'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
