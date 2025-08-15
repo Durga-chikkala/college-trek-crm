@@ -1,237 +1,157 @@
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Calendar, Users, TrendingUp, Clock, Target } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Building2, Users, Calendar, TrendingUp, Clock, CheckCircle } from "lucide-react";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { format } from "date-fns";
 
-interface DashboardStats {
-  totalColleges: number;
-  totalMeetings: number;
-  totalContacts: number;
-  followUpsToday: number;
-  activeDeals: number;
-  conversionRate: number;
-}
+const Dashboard = () => {
+  const { data: stats, isLoading } = useDashboardStats();
 
-export default function Dashboard() {
-  const { user } = useAuth();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalColleges: 0,
-    totalMeetings: 0,
-    totalContacts: 0,
-    followUpsToday: 0,
-    activeDeals: 0,
-    conversionRate: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!user) return;
-
-      try {
-        // Fetch colleges count
-        const { count: collegesCount } = await supabase
-          .from("colleges")
-          .select("*", { count: "exact", head: true });
-
-        // Fetch meetings count
-        const { count: meetingsCount } = await supabase
-          .from("meetings")
-          .select("*", { count: "exact", head: true });
-
-        // Fetch contacts count
-        const { count: contactsCount } = await supabase
-          .from("contacts")
-          .select("*", { count: "exact", head: true });
-
-        // Fetch active deals (prospect + negotiation status)
-        const { count: activeDealsCount } = await supabase
-          .from("colleges")
-          .select("*", { count: "exact", head: true })
-          .in("status", ["prospect", "negotiation"]);
-
-        // Fetch follow-ups for today
-        const today = new Date().toISOString().split('T')[0];
-        const { count: followUpsCount } = await supabase
-          .from("meetings")
-          .select("*", { count: "exact", head: true })
-          .eq("next_follow_up_date", today);
-
-        // Calculate conversion rate (closed won / total colleges)
-        const { count: closedWonCount } = await supabase
-          .from("colleges")
-          .select("*", { count: "exact", head: true })
-          .eq("status", "closed_won");
-
-        const conversionRate = collegesCount ? Math.round((closedWonCount || 0) / collegesCount * 100) : 0;
-
-        setStats({
-          totalColleges: collegesCount || 0,
-          totalMeetings: meetingsCount || 0,
-          totalContacts: contactsCount || 0,
-          followUpsToday: followUpsCount || 0,
-          activeDeals: activeDealsCount || 0,
-          conversionRate,
-        });
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [user]);
-
-  const statCards = [
-    {
-      title: "Total Colleges",
-      value: stats.totalColleges,
-      icon: Building2,
-      description: "Registered colleges",
-      color: "from-blue-500 to-blue-600",
-    },
-    {
-      title: "Active Deals",
-      value: stats.activeDeals,
-      icon: Target,
-      description: "In prospect/negotiation",
-      color: "from-green-500 to-green-600",
-    },
-    {
-      title: "Total Meetings",
-      value: stats.totalMeetings,
-      icon: Calendar,
-      description: "Meetings logged",
-      color: "from-purple-500 to-purple-600",
-    },
-    {
-      title: "Follow-ups Today",
-      value: stats.followUpsToday,
-      icon: Clock,
-      description: "Due today",
-      color: "from-orange-500 to-orange-600",
-    },
-    {
-      title: "Total Contacts",
-      value: stats.totalContacts,
-      icon: Users,
-      description: "Contact persons",
-      color: "from-cyan-500 to-cyan-600",
-    },
-    {
-      title: "Conversion Rate",
-      value: `${stats.conversionRate}%`,
-      icon: TrendingUp,
-      description: "Closed won rate",
-      color: "from-emerald-500 to-emerald-600",
-    },
-  ];
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="pb-2">
-                <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                <div className="h-8 bg-slate-200 rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-3 bg-slate-200 rounded w-full"></div>
-              </CardContent>
-            </Card>
-          ))}
+      <AppLayout>
+        <div className="p-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
     <AppLayout>
-      <div className="p-8 space-y-8">
-        <div className="space-y-2">
+      <div className="p-8">
+        <div className="space-y-2 mb-8">
           <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-600">Welcome back! Here's your sales overview.</p>
+          <p className="text-slate-600">Overview of your sales pipeline and activities</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {statCards.map((stat, index) => (
-            <Card key={index} className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-slate-600">
-                    {stat.title}
-                  </CardTitle>
-                  <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color}`}>
-                    <stat.icon className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-slate-900 mb-1">
-                  {stat.value}
-                </div>
-                <CardDescription className="text-xs">
-                  {stat.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border-0 shadow-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-600" />
-                Recent Activity
-              </CardTitle>
-              <CardDescription>Latest meetings and updates</CardDescription>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Colleges</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-900">System initialized</p>
-                    <p className="text-xs text-slate-500">Ready to start managing your college sales</p>
-                  </div>
-                </div>
-              </div>
+              <div className="text-2xl font-bold">{stats?.totalColleges}</div>
+              <p className="text-xs text-muted-foreground">
+                {stats?.prospectColleges} prospects
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-purple-600" />
-                Quick Actions
-              </CardTitle>
-              <CardDescription>Jump start your workflow</CardDescription>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">In Negotiation</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <button className="w-full p-3 text-left bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg hover:from-blue-100 hover:to-purple-100 transition-colors">
-                  <p className="text-sm font-medium text-slate-900">Add New College</p>
-                  <p className="text-xs text-slate-500">Register a new prospect college</p>
-                </button>
-                <button className="w-full p-3 text-left bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg hover:from-green-100 hover:to-emerald-100 transition-colors">
-                  <p className="text-sm font-medium text-slate-900">Log Meeting</p>
-                  <p className="text-xs text-slate-500">Record your latest college visit</p>
-                </button>
-                <button className="w-full p-3 text-left bg-gradient-to-r from-orange-50 to-red-50 rounded-lg hover:from-orange-100 hover:to-red-100 transition-colors">
-                  <p className="text-sm font-medium text-slate-900">View Follow-ups</p>
-                  <p className="text-xs text-slate-500">Check today's scheduled follow-ups</p>
-                </button>
-              </div>
+              <div className="text-2xl font-bold">{stats?.negotiationColleges}</div>
+              <p className="text-xs text-muted-foreground">
+                Active negotiations
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Closed Won</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.closedWonColleges}</div>
+              <p className="text-xs text-muted-foreground">
+                Successful deals
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Contacts</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.totalContacts}</div>
+              <p className="text-xs text-muted-foreground">
+                College contacts
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Meetings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Meetings</CardTitle>
+              <CardDescription>Your latest college meetings</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {stats?.recentMeetings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No recent meetings</p>
+              ) : (
+                <div className="space-y-4">
+                  {stats?.recentMeetings.map((meeting) => (
+                    <div key={meeting.id} className="flex items-start space-x-3">
+                      <Calendar className="h-4 w-4 text-muted-foreground mt-1" />
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium">{meeting.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {meeting.colleges?.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(meeting.meeting_date), 'PPP')}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Upcoming Meetings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Upcoming Meetings</CardTitle>
+              <CardDescription>Your scheduled meetings</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {stats?.upcomingMeetings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No upcoming meetings</p>
+              ) : (
+                <div className="space-y-4">
+                  {stats?.upcomingMeetings.map((meeting) => (
+                    <div key={meeting.id} className="flex items-start space-x-3">
+                      <Clock className="h-4 w-4 text-muted-foreground mt-1" />
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium">{meeting.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {meeting.colleges?.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(meeting.meeting_date), 'PPP p')}
+                        </p>
+                        {meeting.location && (
+                          <p className="text-xs text-muted-foreground">
+                            📍 {meeting.location}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
     </AppLayout>
   );
-}
+};
+
+export default Dashboard;
