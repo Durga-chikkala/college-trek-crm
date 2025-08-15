@@ -1,9 +1,9 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Calendar, Users, TrendingUp, Clock, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 interface DashboardStats {
   totalColleges: number;
@@ -151,85 +151,87 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-slate-600">Welcome back! Here's your sales overview.</p>
-      </div>
+    <AppLayout>
+      <div className="p-8 space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-slate-600">Welcome back! Here's your sales overview.</p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {statCards.map((stat, index) => (
-          <Card key={index} className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-slate-600">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color}`}>
-                  <stat.icon className="w-4 h-4 text-white" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {statCards.map((stat, index) => (
+            <Card key={index} className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-slate-600">
+                    {stat.title}
+                  </CardTitle>
+                  <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color}`}>
+                    <stat.icon className="w-4 h-4 text-white" />
+                  </div>
                 </div>
-              </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-slate-900 mb-1">
+                  {stat.value}
+                </div>
+                <CardDescription className="text-xs">
+                  {stat.description}
+                </CardDescription>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="border-0 shadow-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-600" />
+                Recent Activity
+              </CardTitle>
+              <CardDescription>Latest meetings and updates</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-900 mb-1">
-                {stat.value}
-              </div>
-              <CardDescription className="text-xs">
-                {stat.description}
-              </CardDescription>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-0 shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-600" />
-              Recent Activity
-            </CardTitle>
-            <CardDescription>Latest meetings and updates</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-900">System initialized</p>
-                  <p className="text-xs text-slate-500">Ready to start managing your college sales</p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-900">System initialized</p>
+                    <p className="text-xs text-slate-500">Ready to start managing your college sales</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-0 shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-purple-600" />
-              Quick Actions
-            </CardTitle>
-            <CardDescription>Jump start your workflow</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <button className="w-full p-3 text-left bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg hover:from-blue-100 hover:to-purple-100 transition-colors">
-                <p className="text-sm font-medium text-slate-900">Add New College</p>
-                <p className="text-xs text-slate-500">Register a new prospect college</p>
-              </button>
-              <button className="w-full p-3 text-left bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg hover:from-green-100 hover:to-emerald-100 transition-colors">
-                <p className="text-sm font-medium text-slate-900">Log Meeting</p>
-                <p className="text-xs text-slate-500">Record your latest college visit</p>
-              </button>
-              <button className="w-full p-3 text-left bg-gradient-to-r from-orange-50 to-red-50 rounded-lg hover:from-orange-100 hover:to-red-100 transition-colors">
-                <p className="text-sm font-medium text-slate-900">View Follow-ups</p>
-                <p className="text-xs text-slate-500">Check today's scheduled follow-ups</p>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
+          <Card className="border-0 shadow-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-purple-600" />
+                Quick Actions
+              </CardTitle>
+              <CardDescription>Jump start your workflow</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <button className="w-full p-3 text-left bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg hover:from-blue-100 hover:to-purple-100 transition-colors">
+                  <p className="text-sm font-medium text-slate-900">Add New College</p>
+                  <p className="text-xs text-slate-500">Register a new prospect college</p>
+                </button>
+                <button className="w-full p-3 text-left bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg hover:from-green-100 hover:to-emerald-100 transition-colors">
+                  <p className="text-sm font-medium text-slate-900">Log Meeting</p>
+                  <p className="text-xs text-slate-500">Record your latest college visit</p>
+                </button>
+                <button className="w-full p-3 text-left bg-gradient-to-r from-orange-50 to-red-50 rounded-lg hover:from-orange-100 hover:to-red-100 transition-colors">
+                  <p className="text-sm font-medium text-slate-900">View Follow-ups</p>
+                  <p className="text-xs text-slate-500">Check today's scheduled follow-ups</p>
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }
