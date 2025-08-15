@@ -9,12 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CollegeForm } from "@/components/colleges/CollegeForm";
 import { useColleges } from "@/hooks/useColleges";
-import { CollegeStatus } from "@/types/database";
 
 const Colleges = () => {
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<CollegeStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const { data: colleges = [], isLoading } = useColleges();
 
   const filteredColleges = colleges.filter(college => {
@@ -25,7 +24,7 @@ const Colleges = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusColor = (status: CollegeStatus) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'prospect': return 'bg-blue-100 text-blue-800';
       case 'negotiation': return 'bg-yellow-100 text-yellow-800';
@@ -35,7 +34,7 @@ const Colleges = () => {
     }
   };
 
-  const getStatusLabel = (status: CollegeStatus) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case 'prospect': return 'Prospect';
       case 'negotiation': return 'Negotiation';
@@ -81,7 +80,7 @@ const Colleges = () => {
               className="pl-10"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as CollegeStatus | "all")}>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-48">
               <Filter className="w-4 h-4 mr-2" />
               <SelectValue />

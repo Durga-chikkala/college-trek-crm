@@ -9,14 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCreateContact } from "@/hooks/useContacts";
 import { useColleges } from "@/hooks/useColleges";
-import { Contact } from "@/types/database";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 interface ContactFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type ContactFormData = Omit<Contact, 'id' | 'created_at' | 'updated_at' | 'created_by'>;
+type ContactFormData = Omit<TablesInsert<'contacts'>, 'created_by'>;
 
 export const ContactForm = ({ open, onOpenChange }: ContactFormProps) => {
   const { register, handleSubmit, reset, setValue, watch } = useForm<ContactFormData>();
@@ -70,7 +70,7 @@ export const ContactForm = ({ open, onOpenChange }: ContactFormProps) => {
               <Input
                 id="designation"
                 {...register("designation")}
-                placeholder="e.g., Dean, Principal"
+                placeholder="e.g., Principal, Dean"
               />
             </div>
             <div className="space-y-2">
@@ -108,7 +108,7 @@ export const ContactForm = ({ open, onOpenChange }: ContactFormProps) => {
             <Textarea
               id="notes"
               {...register("notes")}
-              placeholder="Additional notes about this contact"
+              placeholder="Additional notes about the contact"
               rows={3}
             />
           </div>
@@ -117,9 +117,9 @@ export const ContactForm = ({ open, onOpenChange }: ContactFormProps) => {
             <Checkbox
               id="is_primary"
               checked={isPrimary}
-              onCheckedChange={(checked) => setValue('is_primary', !!checked)}
+              onCheckedChange={(checked) => setValue('is_primary', checked as boolean)}
             />
-            <Label htmlFor="is_primary">Primary contact for this college</Label>
+            <Label htmlFor="is_primary">Primary Contact</Label>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

@@ -1,13 +1,13 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Meeting } from "@/types/database";
 import { useToast } from "@/hooks/use-toast";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 export const useMeetings = () => {
   return useQuery({
     queryKey: ['meetings'],
-    queryFn: async (): Promise<(Meeting & { college_name: string })[]> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('meetings')
         .select(`
@@ -34,7 +34,7 @@ export const useCreateMeeting = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (meeting: Omit<Meeting, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
+    mutationFn: async (meeting: TablesInsert<'meetings'>) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 

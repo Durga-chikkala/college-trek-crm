@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,14 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateCollege } from "@/hooks/useColleges";
-import { College, CollegeStatus } from "@/types/database";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 interface CollegeFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type CollegeFormData = Omit<College, 'id' | 'created_at' | 'updated_at' | 'created_by'>;
+type CollegeFormData = Omit<TablesInsert<'colleges'>, 'created_by'>;
 
 export const CollegeForm = ({ open, onOpenChange }: CollegeFormProps) => {
   const { register, handleSubmit, reset, setValue, watch } = useForm<CollegeFormData>({
@@ -50,7 +49,7 @@ export const CollegeForm = ({ open, onOpenChange }: CollegeFormProps) => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select value={status} onValueChange={(value: CollegeStatus) => setValue('status', value)}>
+              <Select value={status} onValueChange={(value) => setValue('status', value as any)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

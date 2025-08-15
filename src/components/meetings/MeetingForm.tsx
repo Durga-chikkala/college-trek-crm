@@ -8,14 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateMeeting } from "@/hooks/useMeetings";
 import { useColleges } from "@/hooks/useColleges";
-import { Meeting, MeetingOutcome } from "@/types/database";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 interface MeetingFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type MeetingFormData = Omit<Meeting, 'id' | 'created_at' | 'updated_at' | 'created_by'>;
+type MeetingFormData = Omit<TablesInsert<'meetings'>, 'created_by'>;
 
 export const MeetingForm = ({ open, onOpenChange }: MeetingFormProps) => {
   const { register, handleSubmit, reset, setValue, watch } = useForm<MeetingFormData>();
@@ -115,7 +115,7 @@ export const MeetingForm = ({ open, onOpenChange }: MeetingFormProps) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="outcome">Outcome</Label>
-              <Select value={outcome} onValueChange={(value: MeetingOutcome) => setValue('outcome', value)}>
+              <Select value={outcome} onValueChange={(value) => setValue('outcome', value as any)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select outcome" />
                 </SelectTrigger>

@@ -1,13 +1,13 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { College, CollegeStatus } from "@/types/database";
 import { useToast } from "@/hooks/use-toast";
+import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 export const useColleges = () => {
   return useQuery({
     queryKey: ['colleges'],
-    queryFn: async (): Promise<College[]> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('colleges')
         .select('*')
@@ -28,7 +28,7 @@ export const useCreateCollege = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (college: Omit<College, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
+    mutationFn: async (college: TablesInsert<'colleges'>) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
@@ -57,7 +57,7 @@ export const useUpdateCollege = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<College> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: TablesUpdate<'colleges'> & { id: string }) => {
       const { data, error } = await supabase
         .from('colleges')
         .update(updates)

@@ -1,20 +1,26 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Contact } from "@/types/database";
 import { useToast } from "@/hooks/use-toast";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
-export const useContacts = () => {
+export const useContacts = (collegeId?: string) => {
   return useQuery({
-    queryKey: ['contacts'],
-    queryFn: async (): Promise<(Contact & { college_name: string })[]> => {
-      const { data, error } = await supabase
+    queryKey: ['contacts', collegeId],
+    queryFn: async () => {
+      let query = supabase
         .from('contacts')
         .select(`
           *,
           colleges!inner(name)
         `)
         .order('created_at', { ascending: false });
+
+      if (collegeId) {
+        query = query.eq('college_id', collegeId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching contacts:', error);
@@ -34,7 +40,7 @@ export const useCreateContact = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (contact: Omit<Contact, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
+    mutationFn: async (contact: TablesInsert<'contacts'>) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
