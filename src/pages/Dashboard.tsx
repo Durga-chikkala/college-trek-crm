@@ -1,544 +1,496 @@
 
-import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDashboardStats } from "@/hooks/useDashboardStats";
+import React, { useState } from 'react';
+import { useColleges } from '@/hooks/useColleges';
+import { useMeetings } from '@/hooks/useMeetings';
+import { useContacts } from '@/hooks/useContacts';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { 
   Building2, 
   Users, 
-  Calendar, 
-  TrendingUp, 
-  Target, 
-  Clock, 
-  CheckCircle, 
+  Calendar,
+  TrendingUp,
+  Clock,
+  Target,
+  CheckCircle,
   AlertCircle,
-  ArrowUpRight,
-  ArrowDownRight,
-  Plus,
+  Eye,
   Phone,
   Mail,
-  MapPin,
-  DollarSign,
-  Award,
-  Activity,
-  Eye,
-  Edit,
-  Star,
-  Filter,
-  Download,
+  Plus,
+  ArrowUpRight,
+  ArrowDownRight,
   RefreshCw
-} from "lucide-react";
-import { format, isToday, isTomorrow, isPast } from "date-fns";
-import { useNavigate } from "react-router-dom";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart } from 'recharts';
+} from 'lucide-react';
+import { format, subDays, isAfter, isBefore, parseISO } from 'date-fns';
 
 const Dashboard = () => {
-  const { data: stats, isLoading, refetch } = useDashboardStats();
-  const navigate = useNavigate();
+  const [refreshing, setRefreshing] = useState(false);
+  
+  const { data: colleges = [], isLoading: collegesLoading } = useColleges();
+  const { data: meetings = [], isLoading: meetingsLoading } = useMeetings();
+  const { data: contacts = [], isLoading: contactsLoading } = useContacts();
 
-  if (isLoading) {
-    return (
-      <AppLayout>
-        <div className="p-8">
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Simulate refresh delay
+    setTimeout(() => setRefreshing(false), 1000);
+  };
 
-  const pieData = [
-    { name: 'Prospects', value: stats?.prospectColleges || 0, color: '#3B82F6' },
-    { name: 'Negotiation', value: stats?.negotiationColleges || 0, color: '#F59E0B' },
-    { name: 'Closed Won', value: stats?.closedWonColleges || 0, color: '#10B981' },
+  // Calculate statistics
+  const totalColleges = colleges.length;
+  const totalContacts = contacts.length;
+  const totalMeetings = meetings.length;
+  
+  const prospectColleges = colleges.filter(c => c.status === 'prospect').length;
+  const negotiationColleges = colleges.filter(c => c.status === 'negotiation').length;
+  const closedWonColleges = colleges.filter(c => c.status === 'closed_won').length;
+  
+  const conversionRate = totalColleges > 0 ? Math.round((closedWonColleges / totalColleges) * 100) : 0;
+  
+  // Recent activities
+  const recentColleges = colleges
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 5);
+    
+  const upcomingMeetings = meetings
+    .filter(m => new Date(m.meeting_date) > new Date())
+    .sort((a, b) => new Date(a.meeting_date).getTime() - new Date(b.meeting_date).getTime())
+    .slice(0, 5);
+    
+  const recentMeetings = meetings
+    .filter(m => new Date(m.meeting_date) < new Date())
+    .sort((a, b) => new Date(b.meeting_date).getTime() - new Date(a.meeting_date).getTime())
+    .slice(0, 5);
+
+  // Chart data
+  const statusData = [
+    { name: 'Prospect', value: prospectColleges, color: '#3B82F6' },
+    { name: 'Negotiation', value: negotiationColleges, color: '#F59E0B' },
+    { name: 'Closed Won', value: closedWonColleges, color: '#10B981' },
+    { name: 'Lost', value: colleges.filter(c => c.status === 'lost').length, color: '#EF4444' }
   ];
 
-  const monthlyData = [
-    { month: 'Jan', prospects: 12, deals: 3, revenue: 45000 },
-    { month: 'Feb', prospects: 18, deals: 5, revenue: 72000 },
-    { month: 'Mar', prospects: 15, deals: 4, revenue: 58000 },
-    { month: 'Apr', prospects: 22, deals: 7, revenue: 98000 },
-    { month: 'May', prospects: 28, deals: 9, revenue: 125000 },
-    { month: 'Jun', prospects: 25, deals: 8, revenue: 110000 },
-  ];
+  // Monthly data for the last 6 months
+  const monthlyData = Array.from({ length: 6 }, (_, i) => {
+    const date = subDays(new Date(), i * 30);
+    const monthColleges = colleges.filter(c => 
+      new Date(c.created_at).getMonth() === date.getMonth() &&
+      new Date(c.created_at).getFullYear() === date.getFullYear()
+    ).length;
+    
+    return {
+      month: format(date, 'MMM'),
+      colleges: monthColleges,
+      meetings: meetings.filter(m => 
+        new Date(m.meeting_date).getMonth() === date.getMonth() &&
+        new Date(m.meeting_date).getFullYear() === date.getFullYear()
+      ).length
+    };
+  }).reverse();
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'meeting': return <Calendar className="w-4 h-4" />;
-      case 'call': return <Phone className="w-4 h-4" />;
-      case 'email': return <Mail className="w-4 h-4" />;
-      default: return <Activity className="w-4 h-4" />;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'prospect': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'negotiation': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'closed_won': return 'bg-green-100 text-green-800 border-green-200';
+      case 'lost': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const getMeetingStatus = (date: string) => {
-    const meetingDate = new Date(date);
-    if (isPast(meetingDate) && !isToday(meetingDate)) return { status: 'past', color: 'text-muted-foreground', bg: 'bg-muted' };
-    if (isToday(meetingDate)) return { status: 'today', color: 'text-orange-700', bg: 'bg-orange-100' };
-    if (isTomorrow(meetingDate)) return { status: 'tomorrow', color: 'text-blue-700', bg: 'bg-blue-100' };
-    return { status: 'upcoming', color: 'text-green-700', bg: 'bg-green-100' };
-  };
-
-  const conversionRate = stats?.totalColleges ? ((stats.closedWonColleges / stats.totalColleges) * 100).toFixed(1) : 0;
-  const pipelineValue = stats?.negotiationColleges * 85000; // Assumed average deal size
+  if (collegesLoading || meetingsLoading || contactsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <AppLayout>
-      <div className="p-8 space-y-6 bg-gradient-to-br from-slate-50 to-blue-50/30">
-        {/* Enhanced Header */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold text-slate-900 flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
-                <TrendingUp className="w-8 h-8 text-white" />
-              </div>
-              Sales Dashboard
-            </h1>
-            <p className="text-slate-600 text-lg">Track your sales performance and manage your pipeline</p>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
-            <Button variant="outline" size="sm">
-              <Filter className="w-4 h-4 mr-2" />
-              Filter
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </Button>
-            <Button onClick={() => navigate('/colleges')} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg">
-              <Plus className="w-4 h-4 mr-2" />
-              Add College
-            </Button>
-          </div>
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Sales Dashboard
+          </h1>
+          <p className="text-gray-600 mt-2">Overview of your sales pipeline and activities</p>
         </div>
+        <Button 
+          onClick={handleRefresh} 
+          disabled={refreshing}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
 
-        {/* Enhanced KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">Total Colleges</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold">{stats?.totalColleges || 0}</p>
-                    <Badge variant="secondary" className="bg-white/20 text-white border-0">
-                      <ArrowUpRight className="w-3 h-3 mr-1" />
-                      +12%
-                    </Badge>
-                  </div>
-                </div>
-                <div className="p-3 bg-white/20 rounded-lg">
-                  <Building2 className="w-8 h-8" />
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-600 opacity-10"></div>
+          <CardContent className="p-6 relative">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Colleges</p>
+                <p className="text-3xl font-bold text-gray-900">{totalColleges}</p>
+                <div className="flex items-center mt-2">
+                  <ArrowUpRight className="h-4 w-4 text-green-500" />
+                  <span className="text-sm text-green-600 ml-1">+12% from last month</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-xl border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-emerald-100 text-sm font-medium">Closed Won</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold">{stats?.closedWonColleges || 0}</p>
-                    <Badge variant="secondary" className="bg-white/20 text-white border-0">
-                      <ArrowUpRight className="w-3 h-3 mr-1" />
-                      +8%
-                    </Badge>
-                  </div>
-                </div>
-                <div className="p-3 bg-white/20 rounded-lg">
-                  <CheckCircle className="w-8 h-8" />
-                </div>
+              <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-white" />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-xl border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-amber-100 text-sm font-medium">Conversion Rate</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold">{conversionRate}%</p>
-                    <Badge variant="secondary" className="bg-white/20 text-white border-0">
-                      <ArrowUpRight className="w-3 h-3 mr-1" />
-                      +2.3%
-                    </Badge>
-                  </div>
-                </div>
-                <div className="p-3 bg-white/20 rounded-lg">
-                  <Target className="w-8 h-8" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-xl border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-sm font-medium">Pipeline Value</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold">${(pipelineValue / 1000).toFixed(0)}K</p>
-                    <Badge variant="secondary" className="bg-white/20 text-white border-0">
-                      <ArrowUpRight className="w-3 h-3 mr-1" />
-                      +15%
-                    </Badge>
-                  </div>
-                </div>
-                <div className="p-3 bg-white/20 rounded-lg">
-                  <DollarSign className="w-8 h-8" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-            <TabsTrigger value="meetings">Meetings</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Pipeline Distribution */}
-              <Card className="lg:col-span-1 shadow-lg border-0 bg-white/60 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-slate-800 flex items-center gap-2">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Target className="w-5 h-5 text-blue-600" />
-                    </div>
-                    Pipeline Distribution
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={40}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="space-y-2 mt-4">
-                    {pieData.map((item) => (
-                      <div key={item.name} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                          <span className="text-sm text-slate-600">{item.name}</span>
-                        </div>
-                        <span className="font-semibold">{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Monthly Performance */}
-              <Card className="lg:col-span-2 shadow-lg border-0 bg-white/60 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-slate-800 flex items-center gap-2">
-                    <div className="p-2 bg-emerald-100 rounded-lg">
-                      <TrendingUp className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    Monthly Performance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={monthlyData}>
-                        <defs>
-                          <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="month" stroke="#64748b" />
-                        <YAxis stroke="#64748b" />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'white', 
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                          }} 
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="revenue" 
-                          stroke="#10B981" 
-                          fillOpacity={1} 
-                          fill="url(#colorRevenue)" 
-                          strokeWidth={3}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Recent Activity & Quick Stats */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="shadow-lg border-0 bg-white/60 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-slate-800 flex items-center gap-2">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <Activity className="w-5 h-5 text-purple-600" />
-                    </div>
-                    Recent Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {[
-                    { type: 'meeting', college: 'Stanford University', action: 'Meeting completed', time: '2 hours ago', status: 'success' },
-                    { type: 'call', college: 'MIT', action: 'Follow-up call scheduled', time: '4 hours ago', status: 'pending' },
-                    { type: 'email', college: 'Harvard University', action: 'Proposal sent', time: '1 day ago', status: 'info' },
-                    { type: 'meeting', college: 'UC Berkeley', action: 'Initial meeting set', time: '2 days ago', status: 'success' },
-                  ].map((activity, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50/50">
-                      <div className={`p-2 rounded-lg ${
-                        activity.status === 'success' ? 'bg-emerald-100 text-emerald-600' :
-                        activity.status === 'pending' ? 'bg-amber-100 text-amber-600' :
-                        'bg-blue-100 text-blue-600'
-                      }`}>
-                        {getActivityIcon(activity.type)}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-800">{activity.college}</p>
-                        <p className="text-sm text-slate-600">{activity.action}</p>
-                      </div>
-                      <span className="text-xs text-slate-500">{activity.time}</span>
-                    </div>
+        <Card className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-600 opacity-10"></div>
+          <CardContent className="p-6 relative">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Contacts</p>
+                <p className="text-3xl font-bold text-gray-900">{totalContacts}</p>
+                <div className="flex items-center mt-2">
+                  <ArrowUpRight className="h-4 w-4 text-green-500" />
+                  <span className="text-sm text-green-600 ml-1">+8% from last month</span>
+                </div>
+              </div>
+              <div className="h-12 w-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-purple-600 opacity-10"></div>
+          <CardContent className="p-6 relative">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Meetings</p>
+                <p className="text-3xl font-bold text-gray-900">{totalMeetings}</p>
+                <div className="flex items-center mt-2">
+                  <ArrowUpRight className="h-4 w-4 text-green-500" />
+                  <span className="text-sm text-green-600 ml-1">+15% from last month</span>
+                </div>
+              </div>
+              <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Calendar className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-500 opacity-10"></div>
+          <CardContent className="p-6 relative">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Conversion Rate</p>
+                <p className="text-3xl font-bold text-gray-900">{conversionRate}%</p>
+                <div className="flex items-center mt-2">
+                  {conversionRate > 20 ? (
+                    <>
+                      <ArrowUpRight className="h-4 w-4 text-green-500" />
+                      <span className="text-sm text-green-600 ml-1">Above target</span>
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDownRight className="h-4 w-4 text-red-500" />
+                      <span className="text-sm text-red-600 ml-1">Below target</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="h-12 w-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                <Target className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts and Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Monthly Performance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="colleges" fill="#3B82F6" name="New Colleges" />
+                <Bar dataKey="meetings" fill="#10B981" name="Meetings" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Pipeline Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={120}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}`}
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
-                </CardContent>
-              </Card>
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
 
-              <Card className="shadow-lg border-0 bg-white/60 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-slate-800 flex items-center gap-2">
-                    <div className="p-2 bg-amber-100 rounded-lg">
-                      <Award className="w-5 h-5 text-amber-600" />
-                    </div>
-                    Quick Stats
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-slate-600">Monthly Goal Progress</span>
-                      <span className="text-sm font-bold text-slate-800">85%</span>
-                    </div>
-                    <Progress value={85} className="h-2" />
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-slate-600">Average Deal Size</span>
-                      <span className="text-sm font-bold text-slate-800">$85,000</span>
-                    </div>
-                    <Progress value={70} className="h-2" />
-                  </div>
+      {/* Activity Tabs */}
+      <Tabs defaultValue="recent" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="recent">Recent Activity</TabsTrigger>
+          <TabsTrigger value="upcoming">Upcoming Meetings</TabsTrigger>
+          <TabsTrigger value="pipeline">Pipeline Management</TabsTrigger>
+        </TabsList>
 
-                  <div className="grid grid-cols-2 gap-4 pt-4">
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <p className="text-2xl font-bold text-blue-600">{stats?.totalContacts || 0}</p>
-                      <p className="text-xs text-blue-600 font-medium">Total Contacts</p>
-                    </div>
-                    <div className="text-center p-3 bg-emerald-50 rounded-lg">
-                      <p className="text-2xl font-bold text-emerald-600">24</p>
-                      <p className="text-xs text-emerald-600 font-medium">This Month</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="meetings" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Upcoming Meetings */}
-              <Card className="shadow-lg border-0 bg-white/60 backdrop-blur-sm">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-slate-800 flex items-center gap-2">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Calendar className="w-5 h-5 text-blue-600" />
+        <TabsContent value="recent" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Recently Added Colleges
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {recentColleges.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No colleges added yet</p>
+                ) : (
+                  recentColleges.map((college) => (
+                    <div key={college.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <h4 className="font-semibold">{college.name}</h4>
+                        <p className="text-sm text-gray-600">{college.city}, {college.state}</p>
                       </div>
-                      Upcoming Meetings
-                    </CardTitle>
-                    <Button size="sm" onClick={() => navigate('/meetings')}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Meeting
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {stats?.upcomingMeetings?.slice(0, 5).map((meeting) => {
-                    const statusInfo = getMeetingStatus(meeting.meeting_date);
-                    return (
-                      <div key={meeting.id} className="flex items-center gap-3 p-4 rounded-xl bg-slate-50/50 hover:bg-slate-100/50 transition-colors">
-                        <div className={`p-2 rounded-lg ${statusInfo.bg}`}>
-                          <Calendar className={`w-4 h-4 ${statusInfo.color}`} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-slate-800">{meeting.title}</p>
-                          <p className="text-sm text-blue-600 font-medium">{meeting.colleges?.name}</p>
-                          <p className="text-xs text-slate-500">
-                            {format(new Date(meeting.meeting_date), 'MMM dd, yyyy - h:mm a')}
-                          </p>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-
-              {/* Recent Meetings */}
-              <Card className="shadow-lg border-0 bg-white/60 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-slate-800 flex items-center gap-2">
-                    <div className="p-2 bg-emerald-100 rounded-lg">
-                      <Clock className="w-5 h-5 text-emerald-600" />
+                      <Badge className={getStatusColor(college.status)}>
+                        {college.status.replace('_', ' ')}
+                      </Badge>
                     </div>
-                    Recent Meetings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {stats?.recentMeetings?.slice(0, 5).map((meeting) => (
-                    <div key={meeting.id} className="flex items-center gap-3 p-4 rounded-xl bg-slate-50/50 hover:bg-slate-100/50 transition-colors">
-                      <div className="p-2 rounded-lg bg-slate-100">
-                        <CheckCircle className="w-4 h-4 text-slate-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-slate-800">{meeting.title}</p>
-                        <p className="text-sm text-blue-600 font-medium">{meeting.colleges?.name}</p>
-                        <p className="text-xs text-slate-500">
-                          {format(new Date(meeting.meeting_date), 'MMM dd, yyyy')}
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Recent Meetings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {recentMeetings.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No recent meetings</p>
+                ) : (
+                  recentMeetings.map((meeting) => (
+                    <div key={meeting.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <h4 className="font-semibold">{meeting.title}</h4>
+                        <p className="text-sm text-gray-600">{meeting.college_name}</p>
+                        <p className="text-xs text-gray-500">
+                          {format(parseISO(meeting.meeting_date), 'MMM d, yyyy h:mm a')}
                         </p>
                       </div>
                       {meeting.outcome && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge className={
+                          meeting.outcome === 'successful' ? 'bg-green-100 text-green-800' :
+                          meeting.outcome === 'follow_up_needed' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }>
                           {meeting.outcome.replace('_', ' ')}
                         </Badge>
                       )}
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-          <TabsContent value="pipeline" className="space-y-6">
-            <Card className="shadow-lg border-0 bg-white/60 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-slate-800 flex items-center gap-2">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-purple-600" />
-                  </div>
-                  Sales Pipeline Analysis
+        <TabsContent value="upcoming" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Upcoming Meetings
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {upcomingMeetings.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-500">No upcoming meetings scheduled</p>
+                  <Button className="mt-4">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Schedule Meeting
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {upcomingMeetings.map((meeting) => (
+                    <div key={meeting.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-lg">{meeting.title}</h4>
+                        <p className="text-gray-600">{meeting.college_name}</p>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                          <span>📅 {format(parseISO(meeting.meeting_date), 'MMM d, yyyy')}</span>
+                          <span>🕒 {format(parseISO(meeting.meeting_date), 'h:mm a')}</span>
+                          {meeting.location && <span>📍 {meeting.location}</span>}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <Phone className="h-4 w-4 mr-1" />
+                          Call
+                        </Button>
+                        <Button size="sm">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          Join
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="pipeline" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="bg-blue-50 border-blue-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-blue-700">
+                  <Eye className="h-5 w-5" />
+                  Prospects
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={monthlyData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="month" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'white', 
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                        }} 
-                      />
-                      <Bar dataKey="prospects" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="deals" fill="#10B981" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="text-2xl font-bold text-blue-900 mb-2">{prospectColleges}</div>
+                <div className="space-y-2">
+                  {colleges.filter(c => c.status === 'prospect').slice(0, 3).map(college => (
+                    <div key={college.id} className="text-sm text-blue-700 truncate">
+                      {college.name}
+                    </div>
+                  ))}
+                  {prospectColleges > 3 && (
+                    <div className="text-xs text-blue-600">+{prospectColleges - 3} more</div>
+                  )}
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="performance" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                <CardContent className="p-6 text-center">
-                  <Star className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
-                  <h3 className="text-2xl font-bold mb-2">Top Performer</h3>
-                  <p className="text-blue-100">This Quarter</p>
-                  <div className="mt-4 p-3 bg-white/20 rounded-lg">
-                    <p className="text-2xl font-bold">{stats?.closedWonColleges || 0}</p>
-                    <p className="text-sm text-blue-100">Deals Closed</p>
-                  </div>
-                </CardContent>
-              </Card>
+            <Card className="bg-yellow-50 border-yellow-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-yellow-700">
+                  <Clock className="h-5 w-5" />
+                  Negotiation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-900 mb-2">{negotiationColleges}</div>
+                <div className="space-y-2">
+                  {colleges.filter(c => c.status === 'negotiation').slice(0, 3).map(college => (
+                    <div key={college.id} className="text-sm text-yellow-700 truncate">
+                      {college.name}
+                    </div>
+                  ))}
+                  {negotiationColleges > 3 && (
+                    <div className="text-xs text-yellow-600">+{negotiationColleges - 3} more</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card className="shadow-lg border-0 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
-                <CardContent className="p-6 text-center">
-                  <Target className="w-12 h-12 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold mb-2">Goal Achievement</h3>
-                  <p className="text-emerald-100">Monthly Target</p>
-                  <div className="mt-4 p-3 bg-white/20 rounded-lg">
-                    <p className="text-2xl font-bold">85%</p>
-                    <p className="text-sm text-emerald-100">Completed</p>
-                  </div>
-                </CardContent>
-              </Card>
+            <Card className="bg-green-50 border-green-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-green-700">
+                  <CheckCircle className="h-5 w-5" />
+                  Closed Won
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-900 mb-2">{closedWonColleges}</div>
+                <div className="space-y-2">
+                  {colleges.filter(c => c.status === 'closed_won').slice(0, 3).map(college => (
+                    <div key={college.id} className="text-sm text-green-700 truncate">
+                      {college.name}
+                    </div>
+                  ))}
+                  {closedWonColleges > 3 && (
+                    <div className="text-xs text-green-600">+{closedWonColleges - 3} more</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-                <CardContent className="p-6 text-center">
-                  <TrendingUp className="w-12 h-12 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold mb-2">Growth Rate</h3>
-                  <p className="text-purple-100">Month over Month</p>
-                  <div className="mt-4 p-3 bg-white/20 rounded-lg">
-                    <p className="text-2xl font-bold">+18%</p>
-                    <p className="text-sm text-purple-100">Increase</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </AppLayout>
+            <Card className="bg-red-50 border-red-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-red-700">
+                  <AlertCircle className="h-5 w-5" />
+                  Lost
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-900 mb-2">
+                  {colleges.filter(c => c.status === 'lost').length}
+                </div>
+                <div className="space-y-2">
+                  {colleges.filter(c => c.status === 'lost').slice(0, 3).map(college => (
+                    <div key={college.id} className="text-sm text-red-700 truncate">
+                      {college.name}
+                    </div>
+                  ))}
+                  {colleges.filter(c => c.status === 'lost').length > 3 && (
+                    <div className="text-xs text-red-600">
+                      +{colleges.filter(c => c.status === 'lost').length - 3} more
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

@@ -1,172 +1,309 @@
 
-import { useState } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { Calendar, Plus, Search, Clock, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MeetingForm } from "@/components/meetings/MeetingForm";
-import { useMeetings } from "@/hooks/useMeetings";
-import { MeetingOutcome } from "@/types/database";
-import { format } from "date-fns";
+import React, { useState } from 'react';
+import { useMeetings, useCreateMeeting, useUpdateMeeting, useDeleteMeeting } from '@/hooks/useMeetings';
+import { useColleges } from '@/hooks/useColleges';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MeetingForm } from '@/components/meetings/MeetingForm';
+import { 
+  Calendar as CalendarIcon, 
+  Clock, 
+  MapPin, 
+  Users, 
+  Plus, 
+  MoreVertical,
+  Edit,
+  Trash2,
+  Video,
+  Phone
+} from 'lucide-react';
+import { format, isSameDay, parseISO } from 'date-fns';
 
 const Meetings = () => {
-  const [showForm, setShowForm] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState<any>(null);
+  
   const { data: meetings = [], isLoading } = useMeetings();
+  const { data: colleges = [] } = useColleges();
+  const deleteMeeting = useDeleteMeeting();
 
-  const filteredMeetings = meetings.filter(meeting =>
-    meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meeting.college_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meeting.location?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredMeetings = meetings.filter(meeting => 
+    isSameDay(parseISO(meeting.meeting_date), selectedDate)
   );
 
-  const getOutcomeColor = (outcome?: MeetingOutcome) => {
+  const upcomingMeetings = meetings
+    .filter(meeting => new Date(meeting.meeting_date) > new Date())
+    .sort((a, b) => new Date(a.meeting_date).getTime() - new Date(b.meeting_date).getTime())
+    .slice(0, 5);
+
+  const getOutcomeColor = (outcome: string) => {
     switch (outcome) {
-      case 'interested': return 'bg-green-100 text-green-800';
-      case 'follow_up': return 'bg-yellow-100 text-yellow-800';
-      case 'not_interested': return 'bg-red-100 text-red-800';
-      case 'proposal_sent': return 'bg-blue-100 text-blue-800';
-      case 'deal_closed': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'successful': return 'bg-green-100 text-green-800 border-green-200';
+      case 'follow_up_needed': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'not_interested': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const getOutcomeLabel = (outcome?: MeetingOutcome) => {
-    switch (outcome) {
-      case 'interested': return 'Interested';
-      case 'follow_up': return 'Follow Up';
-      case 'not_interested': return 'Not Interested';
-      case 'proposal_sent': return 'Proposal Sent';
-      case 'deal_closed': return 'Deal Closed';
-      default: return 'Pending';
+  const handleEdit = (meeting: any) => {
+    setEditingMeeting(meeting);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = (meetingId: string) => {
+    if (confirm('Are you sure you want to delete this meeting?')) {
+      deleteMeeting.mutate(meetingId);
     }
   };
 
   if (isLoading) {
     return (
-      <AppLayout>
-        <div className="p-8">
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        </div>
-      </AppLayout>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
   return (
-    <AppLayout>
-      <div className="p-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-slate-900">Meetings</h1>
-            <p className="text-slate-600">Track your college visits and follow-ups</p>
-          </div>
-          <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Add Meeting
-          </Button>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Meetings</h1>
+          <p className="text-gray-600 mt-2">Manage your college meetings and schedules</p>
         </div>
-
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search meetings..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Schedule Meeting
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {editingMeeting ? 'Edit Meeting' : 'Schedule New Meeting'}
+              </DialogTitle>
+            </DialogHeader>
+            <MeetingForm 
+              meeting={editingMeeting}
+              onSuccess={() => {
+                setIsDialogOpen(false);
+                setEditingMeeting(null);
+              }}
             />
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Tabs defaultValue="calendar" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+          <TabsTrigger value="list">List View</TabsTrigger>
+          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="calendar" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5" />
+                  Select Date
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  className="rounded-md border"
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>
+                  Meetings on {format(selectedDate, 'MMMM d, yyyy')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {filteredMeetings.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <CalendarIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No meetings scheduled for this date</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredMeetings.map((meeting) => (
+                      <div key={meeting.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-lg">{meeting.title}</h3>
+                              {meeting.outcome && (
+                                <Badge className={getOutcomeColor(meeting.outcome)}>
+                                  {meeting.outcome.replace('_', ' ')}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                {format(parseISO(meeting.meeting_date), 'h:mm a')}
+                                {meeting.duration_minutes && ` (${meeting.duration_minutes} min)`}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                {meeting.college_name}
+                              </div>
+                              {meeting.location && (
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-4 w-4" />
+                                  {meeting.location}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEdit(meeting)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Meeting
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDelete(meeting.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Meeting
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
-        </div>
+        </TabsContent>
 
-        {filteredMeetings.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">
-              {meetings.length === 0 ? "No meetings logged" : "No meetings match your search"}
-            </h3>
-            <p className="text-slate-500 mb-4">
-              {meetings.length === 0 ? "Start by logging your first college meeting" : "Try adjusting your search terms"}
-            </p>
-            {meetings.length === 0 && (
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add First Meeting
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMeetings.map((meeting) => (
-              <Card key={meeting.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg font-semibold">{meeting.title}</CardTitle>
-                      <p className="text-sm text-blue-600 font-medium">{meeting.college_name}</p>
+        <TabsContent value="list" className="space-y-4">
+          <div className="grid gap-4">
+            {meetings.map((meeting) => (
+              <Card key={meeting.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-lg">{meeting.title}</h3>
+                        {meeting.outcome && (
+                          <Badge className={getOutcomeColor(meeting.outcome)}>
+                            {meeting.outcome.replace('_', ' ')}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="h-4 w-4" />
+                          {format(parseISO(meeting.meeting_date), 'MMM d, yyyy h:mm a')}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          {meeting.college_name}
+                        </div>
+                        {meeting.location && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            {meeting.location}
+                          </div>
+                        )}
+                      </div>
+                      {meeting.agenda && (
+                        <p className="mt-2 text-gray-700">{meeting.agenda}</p>
+                      )}
                     </div>
-                    {meeting.outcome && (
-                      <Badge className={getOutcomeColor(meeting.outcome)}>
-                        {getOutcomeLabel(meeting.outcome)}
-                      </Badge>
-                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(meeting)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Meeting
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDelete(meeting.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Meeting
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>{format(new Date(meeting.meeting_date), 'PPP')}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="w-4 h-4" />
-                    <span>
-                      {format(new Date(meeting.meeting_date), 'p')}
-                      {meeting.duration_minutes && ` (${meeting.duration_minutes} min)`}
-                    </span>
-                  </div>
-
-                  {meeting.location && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin className="w-4 h-4" />
-                      <span>{meeting.location}</span>
-                    </div>
-                  )}
-
-                  {meeting.agenda && (
-                    <div className="pt-2 border-t">
-                      <p className="text-sm font-medium text-gray-700 mb-1">Agenda:</p>
-                      <p className="text-sm text-gray-600">{meeting.agenda}</p>
-                    </div>
-                  )}
-
-                  {meeting.discussion_notes && (
-                    <div className="pt-2 border-t">
-                      <p className="text-sm font-medium text-gray-700 mb-1">Notes:</p>
-                      <p className="text-sm text-gray-600">{meeting.discussion_notes}</p>
-                    </div>
-                  )}
-
-                  {meeting.next_follow_up_date && (
-                    <div className="pt-2 border-t">
-                      <p className="text-sm font-medium text-gray-700 mb-1">Next Follow-up:</p>
-                      <p className="text-sm text-gray-600">
-                        {format(new Date(meeting.next_follow_up_date), 'PPP')}
-                      </p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             ))}
           </div>
-        )}
+        </TabsContent>
 
-        <MeetingForm open={showForm} onOpenChange={setShowForm} />
-      </div>
-    </AppLayout>
+        <TabsContent value="upcoming" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Upcoming Meetings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {upcomingMeetings.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No upcoming meetings scheduled</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {upcomingMeetings.map((meeting) => (
+                    <div key={meeting.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h3 className="font-semibold">{meeting.title}</h3>
+                        <p className="text-sm text-gray-600">{meeting.college_name}</p>
+                        <p className="text-sm text-gray-500">
+                          {format(parseISO(meeting.meeting_date), 'MMM d, yyyy h:mm a')}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <Video className="h-4 w-4 mr-1" />
+                          Join
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Phone className="h-4 w-4 mr-1" />
+                          Call
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
