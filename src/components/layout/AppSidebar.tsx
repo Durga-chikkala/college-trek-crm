@@ -44,7 +44,8 @@ const bottomNavigation = [
 ];
 
 export function AppSidebar() {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [showQuickActions, setShowQuickActions] = useState(false);
