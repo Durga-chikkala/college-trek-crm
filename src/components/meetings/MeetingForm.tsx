@@ -6,35 +6,58 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateMeeting } from "@/hooks/useMeetings";
+import { useCreateMeeting, useUpdateMeeting } from "@/hooks/useMeetings";
 import { useColleges } from "@/hooks/useColleges";
-import type { TablesInsert } from "@/integrations/supabase/types";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 interface MeetingFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  meeting?: Tables<'meetings'> & { college_name?: string };
 }
 
-type MeetingFormData = Omit<TablesInsert<'meetings'>, 'created_by'>;
+type MeetingFormData = Omit<TablesInsert<'meetings'>, 'created_by' | 'created_at' | 'updated_at'>;
 
-export const MeetingForm = ({ open, onOpenChange }: MeetingFormProps) => {
-  const { register, handleSubmit, reset, setValue, watch } = useForm<MeetingFormData>();
+export const MeetingForm = ({ open, onOpenChange, meeting }: MeetingFormProps) => {
+  const { register, handleSubmit, reset, setValue, watch } = useForm<MeetingFormData>({
+    defaultValues: meeting ? {
+      title: meeting.title,
+      college_id: meeting.college_id,
+      meeting_date: meeting.meeting_date,
+      agenda: meeting.agenda || '',
+      discussion_notes: meeting.discussion_notes || '',
+      outcome: meeting.outcome || undefined,
+      duration_minutes: meeting.duration_minutes || undefined,
+      location: meeting.location || '',
+      next_follow_up_date: meeting.next_follow_up_date || undefined
+    } : {}
+  });
+
   const createMeeting = useCreateMeeting();
+  const updateMeeting = useUpdateMeeting();
   const { data: colleges = [] } = useColleges();
   const collegeId = watch('college_id');
   const outcome = watch('outcome');
 
   const onSubmit = async (data: MeetingFormData) => {
-    await createMeeting.mutateAsync(data);
+    if (meeting) {
+      await updateMeeting.mutateAsync({ id: meeting.id, ...data });
+    } else {
+      await createMeeting.mutateAsync(data);
+    }
     reset();
     onOpenChange(false);
   };
+
+  const isLoading = createMeeting.isPending || updateMeeting.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add New Meeting</DialogTitle>
+          <DialogTitle>
+            {meeting ? "Edit Meeting" : "Add New Meeting"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -146,8 +169,8 @@ export const MeetingForm = ({ open, onOpenChange }: MeetingFormProps) => {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createMeeting.isPending}>
-              {createMeeting.isPending ? "Adding..." : "Add Meeting"}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (meeting ? "Updating..." : "Adding...") : (meeting ? "Update Meeting" : "Add Meeting")}
             </Button>
           </div>
         </form>

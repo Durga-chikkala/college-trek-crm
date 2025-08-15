@@ -7,35 +7,59 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCreateContact } from "@/hooks/useContacts";
+import { useCreateContact, useUpdateContact } from "@/hooks/useContacts";
 import { useColleges } from "@/hooks/useColleges";
-import type { TablesInsert } from "@/integrations/supabase/types";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 interface ContactFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  contact?: Tables<'contacts'> & { college_name?: string };
 }
 
-type ContactFormData = Omit<TablesInsert<'contacts'>, 'created_by'>;
+type ContactFormData = Omit<TablesInsert<'contacts'>, 'created_by' | 'created_at' | 'updated_at'>;
 
-export const ContactForm = ({ open, onOpenChange }: ContactFormProps) => {
-  const { register, handleSubmit, reset, setValue, watch } = useForm<ContactFormData>();
+export const ContactForm = ({ open, onOpenChange, contact }: ContactFormProps) => {
+  const { register, handleSubmit, reset, setValue, watch } = useForm<ContactFormData>({
+    defaultValues: contact ? {
+      name: contact.name,
+      college_id: contact.college_id,
+      designation: contact.designation || '',
+      phone: contact.phone || '',
+      email: contact.email || '',
+      linkedin: contact.linkedin || '',
+      notes: contact.notes || '',
+      is_primary: contact.is_primary || false
+    } : {
+      is_primary: false
+    }
+  });
+
   const createContact = useCreateContact();
+  const updateContact = useUpdateContact();
   const { data: colleges = [] } = useColleges();
   const collegeId = watch('college_id');
   const isPrimary = watch('is_primary');
 
   const onSubmit = async (data: ContactFormData) => {
-    await createContact.mutateAsync(data);
+    if (contact) {
+      await updateContact.mutateAsync({ id: contact.id, ...data });
+    } else {
+      await createContact.mutateAsync(data);
+    }
     reset();
     onOpenChange(false);
   };
+
+  const isLoading = createContact.isPending || updateContact.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add New Contact</DialogTitle>
+          <DialogTitle>
+            {contact ? "Edit Contact" : "Add New Contact"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -130,8 +154,8 @@ export const ContactForm = ({ open, onOpenChange }: ContactFormProps) => {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createContact.isPending}>
-              {createContact.isPending ? "Adding..." : "Add Contact"}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (contact ? "Updating..." : "Adding...") : (contact ? "Update Contact" : "Add Contact")}
             </Button>
           </div>
         </form>

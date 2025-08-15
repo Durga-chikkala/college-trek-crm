@@ -6,36 +6,58 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateCollege } from "@/hooks/useColleges";
-import type { TablesInsert } from "@/integrations/supabase/types";
+import { useCreateCollege, useUpdateCollege } from "@/hooks/useColleges";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 interface CollegeFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  college?: Tables<'colleges'>;
 }
 
-type CollegeFormData = Omit<TablesInsert<'colleges'>, 'created_by'>;
+type CollegeFormData = Omit<TablesInsert<'colleges'>, 'created_by' | 'created_at' | 'updated_at'>;
 
-export const CollegeForm = ({ open, onOpenChange }: CollegeFormProps) => {
+export const CollegeForm = ({ open, onOpenChange, college }: CollegeFormProps) => {
   const { register, handleSubmit, reset, setValue, watch } = useForm<CollegeFormData>({
-    defaultValues: {
+    defaultValues: college ? {
+      name: college.name,
+      address: college.address || '',
+      city: college.city || '',
+      state: college.state || '',
+      pin_code: college.pin_code || '',
+      website: college.website || '',
+      email: college.email || '',
+      phone: college.phone || '',
+      status: college.status,
+      assigned_rep: college.assigned_rep || undefined
+    } : {
       status: 'prospect'
     }
   });
+
   const createCollege = useCreateCollege();
+  const updateCollege = useUpdateCollege();
   const status = watch('status');
 
   const onSubmit = async (data: CollegeFormData) => {
-    await createCollege.mutateAsync(data);
+    if (college) {
+      await updateCollege.mutateAsync({ id: college.id, ...data });
+    } else {
+      await createCollege.mutateAsync(data);
+    }
     reset();
     onOpenChange(false);
   };
+
+  const isLoading = createCollege.isPending || updateCollege.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add New College</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {college ? "Edit College" : "Add New College"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -137,8 +159,8 @@ export const CollegeForm = ({ open, onOpenChange }: CollegeFormProps) => {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createCollege.isPending}>
-              {createCollege.isPending ? "Adding..." : "Add College"}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (college ? "Updating..." : "Adding...") : (college ? "Update College" : "Add College")}
             </Button>
           </div>
         </form>

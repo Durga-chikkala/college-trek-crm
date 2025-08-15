@@ -78,3 +78,27 @@ export const useUpdateCollege = () => {
     },
   });
 };
+
+export const useDeleteCollege = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('colleges')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['colleges'] });
+      toast({ title: "Success", description: "College deleted successfully" });
+    },
+    onError: (error) => {
+      console.error('Error deleting college:', error);
+      toast({ title: "Error", description: "Failed to delete college", variant: "destructive" });
+    },
+  });
+};

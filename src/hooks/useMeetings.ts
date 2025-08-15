@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { TablesInsert } from "@/integrations/supabase/types";
+import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 export const useMeetings = () => {
   return useQuery({
@@ -54,6 +54,57 @@ export const useCreateMeeting = () => {
     onError: (error) => {
       console.error('Error creating meeting:', error);
       toast({ title: "Error", description: "Failed to add meeting", variant: "destructive" });
+    },
+  });
+};
+
+export const useUpdateMeeting = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: TablesUpdate<'meetings'> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('meetings')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetings'] });
+      toast({ title: "Success", description: "Meeting updated successfully" });
+    },
+    onError: (error) => {
+      console.error('Error updating meeting:', error);
+      toast({ title: "Error", description: "Failed to update meeting", variant: "destructive" });
+    },
+  });
+};
+
+export const useDeleteMeeting = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('meetings')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meetings'] });
+      toast({ title: "Success", description: "Meeting deleted successfully" });
+    },
+    onError: (error) => {
+      console.error('Error deleting meeting:', error);
+      toast({ title: "Error", description: "Failed to delete meeting", variant: "destructive" });
     },
   });
 };
