@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useContacts, useCreateContact, useUpdateContact, useDeleteContact } from '@/hooks/useContacts';
+import { useContacts, useDeleteContact } from '@/hooks/useContacts';
 import { useColleges } from '@/hooks/useColleges';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ContactForm } from '@/components/contacts/ContactForm';
 import { 
@@ -25,7 +25,6 @@ import {
   Filter,
   SortAsc,
   Linkedin,
-  MessageCircle,
   Calendar,
   User
 } from 'lucide-react';
@@ -112,8 +111,8 @@ const Contacts = () => {
       <AppLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-slate-600">Loading contacts...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading contacts...</p>
           </div>
         </div>
       </AppLayout>
@@ -122,97 +121,101 @@ const Contacts = () => {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Contacts</h1>
-            <p className="text-gray-600 mt-2">Manage your college contacts and relationships</p>
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-background min-h-screen">
+        {/* Header - Mobile Optimized */}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Contacts</h1>
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your college contacts and relationships</p>
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+              <DialogTrigger asChild>
+                <Button className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Contact
+                </Button>
+              </DialogTrigger>
+              <ContactForm 
+                open={isDialogOpen}
+                onOpenChange={handleDialogOpenChange}
+                contact={editingContact}
+              />
+            </Dialog>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Contact
-              </Button>
-            </DialogTrigger>
-            <ContactForm 
-              open={isDialogOpen}
-              onOpenChange={handleDialogOpenChange}
-              contact={editingContact}
-            />
-          </Dialog>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100">Total Contacts</p>
-                  <p className="text-2xl font-bold">{contacts.length}</p>
+        {/* Statistics Cards - Mobile Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <p className="text-xs sm:text-sm text-emerald-100">Total Contacts</p>
+                  <p className="text-lg sm:text-2xl font-bold">{contacts.length}</p>
                 </div>
-                <Users className="h-8 w-8 text-green-200" />
+                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-200 self-end sm:self-auto" />
               </div>
             </CardContent>
           </Card>
+          
           <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100">Primary Contacts</p>
-                  <p className="text-2xl font-bold">{primaryContacts.length}</p>
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <p className="text-xs sm:text-sm text-blue-100">Primary Contacts</p>
+                  <p className="text-lg sm:text-2xl font-bold">{primaryContacts.length}</p>
                 </div>
-                <Star className="h-8 w-8 text-blue-200" />
+                <Star className="h-6 w-6 sm:h-8 sm:w-8 text-blue-200 self-end sm:self-auto" />
               </div>
             </CardContent>
           </Card>
+          
           <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100">Colleges Covered</p>
-                  <p className="text-2xl font-bold">{totalCollegesWithContacts}</p>
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <p className="text-xs sm:text-sm text-purple-100">Colleges Covered</p>
+                  <p className="text-lg sm:text-2xl font-bold">{totalCollegesWithContacts}</p>
                 </div>
-                <Building2 className="h-8 w-8 text-purple-200" />
+                <Building2 className="h-6 w-6 sm:h-8 sm:w-8 text-purple-200 self-end sm:self-auto" />
               </div>
             </CardContent>
           </Card>
+          
           <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-100">Avg per College</p>
-                  <p className="text-2xl font-bold">
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <p className="text-xs sm:text-sm text-orange-100">Avg per College</p>
+                  <p className="text-lg sm:text-2xl font-bold">
                     {totalCollegesWithContacts > 0 
                       ? Math.round(contacts.length / totalCollegesWithContacts)
                       : 0}
                   </p>
                 </div>
-                <User className="h-8 w-8 text-orange-200" />
+                <User className="h-6 w-6 sm:h-8 sm:w-8 text-orange-200 self-end sm:self-auto" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Filters and Search */}
+        {/* Filters and Search - Mobile Optimized */}
         <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search contacts by name, email, or designation..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search contacts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Select value={collegeFilter} onValueChange={setCollegeFilter}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Filter by college" />
                   </SelectTrigger>
@@ -226,7 +229,7 @@ const Contacts = () => {
                   </SelectContent>
                 </Select>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SortAsc className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
@@ -241,150 +244,135 @@ const Contacts = () => {
           </CardContent>
         </Card>
 
-        {/* Contacts Grid */}
-        <div className="grid gap-4">
+        {/* Contacts Grid - Mobile Optimized */}
+        <div className="space-y-3 sm:space-y-4">
           {filteredAndSortedContacts.map((contact) => (
-            <Card key={contact.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+            <Card key={contact.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-emerald-500">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-lg flex-shrink-0">
                         {contact.name.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-semibold text-gray-900">{contact.name}</h3>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{contact.name}</h3>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => toggleFavorite(contact.id)}
-                            className={favorites.has(contact.id) ? 'text-yellow-500' : 'text-gray-400'}
+                            className={`p-1 h-auto ${favorites.has(contact.id) ? 'text-yellow-500' : 'text-muted-foreground'}`}
                           >
-                            <Star className={`h-4 w-4 ${favorites.has(contact.id) ? 'fill-current' : ''}`} />
+                            <Star className={`h-3 w-3 sm:h-4 sm:w-4 ${favorites.has(contact.id) ? 'fill-current' : ''}`} />
                           </Button>
                           {contact.is_primary && (
-                            <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
                               Primary
                             </Badge>
                           )}
                         </div>
-                        <p className="text-gray-600">{contact.designation}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Building2 className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">{getCollegeName(contact.college_id)}</span>
+                        <p className="text-sm text-muted-foreground truncate">{contact.designation}</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Building2 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-xs sm:text-sm text-muted-foreground truncate">{getCollegeName(contact.college_id)}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-1 lg:grid-cols-3 sm:gap-4">
                       {contact.phone && (
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Phone className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Phone className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                           <span 
-                            className="cursor-pointer hover:text-green-600"
+                            className="cursor-pointer hover:text-primary text-xs sm:text-sm truncate"
                             onClick={() => handleCopy(contact.phone!, 'Phone number')}
                           >
                             {contact.phone}
                           </span>
-                          <Copy className="h-3 w-3 cursor-pointer hover:text-green-600" />
+                          <Copy className="h-3 w-3 cursor-pointer hover:text-primary flex-shrink-0" />
                         </div>
                       )}
                       {contact.email && (
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Mail className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Mail className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                           <span 
-                            className="cursor-pointer hover:text-green-600"
+                            className="cursor-pointer hover:text-primary text-xs sm:text-sm truncate"
                             onClick={() => handleCopy(contact.email!, 'Email')}
                           >
                             {contact.email}
                           </span>
-                          <Copy className="h-3 w-3 cursor-pointer hover:text-green-600" />
+                          <Copy className="h-3 w-3 cursor-pointer hover:text-primary flex-shrink-0" />
                         </div>
                       )}
                       {contact.linkedin && (
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Linkedin className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Linkedin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                           <a 
                             href={contact.linkedin} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="hover:text-green-600 flex items-center gap-1"
+                            className="hover:text-primary flex items-center gap-1 text-xs sm:text-sm truncate"
                           >
                             LinkedIn Profile
-                            <ExternalLink className="h-3 w-3" />
+                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
                           </a>
                         </div>
                       )}
                     </div>
 
                     {contact.notes && (
-                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-gray-700">{contact.notes}</p>
+                      <div className="mt-3 p-2 sm:p-3 bg-muted rounded-lg">
+                        <p className="text-xs sm:text-sm text-muted-foreground">{contact.notes}</p>
                       </div>
                     )}
                   </div>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => handleEdit(contact)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit Contact
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <Phone className="h-4 w-4 mr-2" />
-                        Make Call
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Mail className="h-4 w-4 mr-2" />
-                        Send Email
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        Send Message
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Schedule Meeting
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => handleDelete(contact.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Contact
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex sm:flex-col items-center gap-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => handleEdit(contact)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Contact
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => handleDelete(contact.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Contact
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
 
-                <div className="flex justify-between items-center mt-6 pt-4 border-t">
-                  <div className="text-xs text-gray-500">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mt-4 pt-3 border-t">
+                  <div className="text-xs text-muted-foreground">
                     Added {new Date(contact.created_at).toLocaleDateString()}
                   </div>
                   <div className="flex gap-2">
                     {contact.phone && (
-                      <Button size="sm" variant="outline">
-                        <Phone className="h-4 w-4 mr-1" />
-                        Call
+                      <Button size="sm" variant="outline" className="flex-1 sm:flex-none">
+                        <Phone className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="hidden sm:inline">Call</span>
                       </Button>
                     )}
                     {contact.email && (
-                      <Button size="sm" variant="outline">
-                        <Mail className="h-4 w-4 mr-1" />
-                        Email
+                      <Button size="sm" variant="outline" className="flex-1 sm:flex-none">
+                        <Mail className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="hidden sm:inline">Email</span>
                       </Button>
                     )}
-                    <Button size="sm" className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      Meet
+                    <Button size="sm" className="flex-1 sm:flex-none">
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <span className="hidden sm:inline">Meet</span>
                     </Button>
                   </div>
                 </div>
@@ -395,10 +383,10 @@ const Contacts = () => {
 
         {filteredAndSortedContacts.length === 0 && (
           <Card>
-            <CardContent className="p-12 text-center">
-              <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No contacts found</h3>
-              <p className="text-gray-600 mb-4">
+            <CardContent className="p-8 sm:p-12 text-center">
+              <Users className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">No contacts found</h3>
+              <p className="text-sm sm:text-base text-muted-foreground mb-4">
                 {searchTerm || collegeFilter !== 'all'
                   ? 'Try adjusting your search criteria'
                   : 'Get started by adding your first contact'}
@@ -406,7 +394,7 @@ const Contacts = () => {
               {!searchTerm && collegeFilter === 'all' && (
                 <Button 
                   onClick={() => setIsDialogOpen(true)}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                  className="w-full sm:w-auto"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Your First Contact
