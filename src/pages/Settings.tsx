@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   User, 
   Bell, 
@@ -23,7 +25,11 @@ import {
   Sun,
   Globe,
   Mail,
-  Phone
+  Phone,
+  Key,
+  Download,
+  Trash2,
+  Lock
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -40,7 +46,9 @@ export default function Settings() {
     email: user?.email || '',
     phone: '',
     title: '',
+    bio: '',
     timezone: 'UTC',
+    language: 'en',
   });
 
   // Notification settings
@@ -50,6 +58,7 @@ export default function Settings() {
     meetingReminders: true,
     weeklyReports: false,
     marketingEmails: false,
+    soundEnabled: true,
   });
 
   // Appearance settings
@@ -57,12 +66,19 @@ export default function Settings() {
     theme: 'light',
     compactMode: false,
     showAvatars: true,
+    sidebarCollapsed: false,
+  });
+
+  // Security settings
+  const [security, setSecurity] = useState({
+    twoFactorEnabled: false,
+    sessionTimeout: '30',
+    loginNotifications: true,
   });
 
   const handleSaveProfile = async () => {
     setLoading(true);
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast({
         title: "Profile updated",
@@ -87,15 +103,38 @@ export default function Settings() {
         title: "Notifications updated",
         description: "Your notification preferences have been saved.",
       });
-    } catch (error) {
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveAppearance = async () => {
+    setLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Apply theme changes
+      document.documentElement.classList.toggle('dark', appearance.theme === 'dark');
       toast({
-        title: "Error",
-        description: "Failed to update notifications. Please try again.",
-        variant: "destructive",
+        title: "Appearance updated",
+        description: "Your appearance preferences have been saved.",
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleChangePassword = () => {
+    toast({
+      title: "Password Change",
+      description: "Password change functionality would be implemented here.",
+    });
+  };
+
+  const handleExportData = () => {
+    toast({
+      title: "Data Export",
+      description: "Your data export has been initiated. You'll receive an email when ready.",
+    });
   };
 
   const userInitials = profileData.firstName && profileData.lastName
@@ -113,28 +152,28 @@ export default function Settings() {
 
         <Tabs defaultValue="profile" className="space-y-4">
           <div className="overflow-x-auto">
-            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 min-w-max">
-              <TabsTrigger value="profile" className="text-xs sm:text-sm">
+            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 min-w-max bg-white border">
+              <TabsTrigger value="profile" className="text-xs sm:text-sm data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
                 <User className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Profile</span>
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="text-xs sm:text-sm">
+              <TabsTrigger value="notifications" className="text-xs sm:text-sm data-[state=active]:bg-green-50 data-[state=active]:text-green-700">
                 <Bell className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Notifications</span>
               </TabsTrigger>
-              <TabsTrigger value="appearance" className="text-xs sm:text-sm">
+              <TabsTrigger value="appearance" className="text-xs sm:text-sm data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700">
                 <Palette className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Appearance</span>
               </TabsTrigger>
-              <TabsTrigger value="security" className="text-xs sm:text-sm">
+              <TabsTrigger value="security" className="text-xs sm:text-sm data-[state=active]:bg-red-50 data-[state=active]:text-red-700">
                 <Shield className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Security</span>
               </TabsTrigger>
-              <TabsTrigger value="data" className="text-xs sm:text-sm">
+              <TabsTrigger value="data" className="text-xs sm:text-sm data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700">
                 <Database className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Data</span>
               </TabsTrigger>
-              <TabsTrigger value="help" className="text-xs sm:text-sm">
+              <TabsTrigger value="help" className="text-xs sm:text-sm data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700">
                 <HelpCircle className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Help</span>
               </TabsTrigger>
@@ -144,58 +183,103 @@ export default function Settings() {
           <TabsContent value="profile" className="space-y-4">
             <div className="grid gap-4 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Personal Information</CardTitle>
-                    <CardDescription>Update your personal details and contact information.</CardDescription>
+                <Card className="border-blue-200 shadow-sm">
+                  <CardHeader className="bg-blue-50">
+                    <CardTitle className="text-blue-900">Personal Information</CardTitle>
+                    <CardDescription className="text-blue-700">Update your personal details and contact information.</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4 pt-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="firstName">First Name</Label>
+                        <Label htmlFor="firstName" className="text-slate-700">First Name</Label>
                         <Input
                           id="firstName"
                           value={profileData.firstName}
                           onChange={(e) => setProfileData({...profileData, firstName: e.target.value})}
+                          className="border-slate-300 focus:border-blue-500"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="lastName">Last Name</Label>
+                        <Label htmlFor="lastName" className="text-slate-700">Last Name</Label>
                         <Input
                           id="lastName"
                           value={profileData.lastName}
                           onChange={(e) => setProfileData({...profileData, lastName: e.target.value})}
+                          className="border-slate-300 focus:border-blue-500"
                         />
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="email" className="text-slate-700">Email</Label>
                       <Input
                         id="email"
                         type="email"
                         value={profileData.email}
                         onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                        className="border-slate-300 focus:border-blue-500"
                       />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="phone">Phone</Label>
+                        <Label htmlFor="phone" className="text-slate-700">Phone</Label>
                         <Input
                           id="phone"
                           value={profileData.phone}
                           onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+                          className="border-slate-300 focus:border-blue-500"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="title">Job Title</Label>
+                        <Label htmlFor="title" className="text-slate-700">Job Title</Label>
                         <Input
                           id="title"
                           value={profileData.title}
                           onChange={(e) => setProfileData({...profileData, title: e.target.value})}
+                          className="border-slate-300 focus:border-blue-500"
                         />
                       </div>
                     </div>
-                    <Button onClick={handleSaveProfile} disabled={loading} className="w-full sm:w-auto">
+                    <div>
+                      <Label htmlFor="bio" className="text-slate-700">Bio</Label>
+                      <Textarea
+                        id="bio"
+                        value={profileData.bio}
+                        onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+                        className="border-slate-300 focus:border-blue-500"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="timezone" className="text-slate-700">Timezone</Label>
+                        <Select value={profileData.timezone} onValueChange={(value) => setProfileData({...profileData, timezone: value})}>
+                          <SelectTrigger className="border-slate-300">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="UTC">UTC</SelectItem>
+                            <SelectItem value="EST">Eastern Time</SelectItem>
+                            <SelectItem value="PST">Pacific Time</SelectItem>
+                            <SelectItem value="GMT">GMT</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="language" className="text-slate-700">Language</Label>
+                        <Select value={profileData.language} onValueChange={(value) => setProfileData({...profileData, language: value})}>
+                          <SelectTrigger className="border-slate-300">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="es">Spanish</SelectItem>
+                            <SelectItem value="fr">French</SelectItem>
+                            <SelectItem value="de">German</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <Button onClick={handleSaveProfile} disabled={loading} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">
                       <Save className="w-4 h-4 mr-2" />
                       {loading ? 'Saving...' : 'Save Changes'}
                     </Button>
@@ -204,35 +288,35 @@ export default function Settings() {
               </div>
 
               <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Profile Picture</CardTitle>
+                <Card className="border-blue-200">
+                  <CardHeader className="bg-blue-50">
+                    <CardTitle className="text-blue-900">Profile Picture</CardTitle>
                   </CardHeader>
-                  <CardContent className="text-center space-y-4">
+                  <CardContent className="text-center space-y-4 pt-6">
                     <Avatar className="w-20 h-20 mx-auto">
-                      <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white text-lg">
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-lg">
                         {userInitials}
                       </AvatarFallback>
                     </Avatar>
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button variant="outline" size="sm" className="w-full border-blue-300 text-blue-700 hover:bg-blue-50">
                       <Upload className="w-4 h-4 mr-2" />
                       Upload New Photo
                     </Button>
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Account Status</CardTitle>
+                <Card className="border-green-200">
+                  <CardHeader className="bg-green-50">
+                    <CardTitle className="text-green-900">Account Status</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2">
+                  <CardContent className="space-y-2 pt-6">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Plan</span>
-                      <Badge>Professional</Badge>
+                      <span className="text-sm text-slate-600">Plan</span>
+                      <Badge className="bg-green-100 text-green-800 border-green-300">Professional</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Status</span>
-                      <Badge variant="outline" className="bg-green-50 text-green-700">Active</Badge>
+                      <span className="text-sm text-slate-600">Status</span>
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">Active</Badge>
                     </div>
                   </CardContent>
                 </Card>
@@ -241,17 +325,17 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>Choose how you want to be notified about important updates.</CardDescription>
+            <Card className="border-green-200">
+              <CardHeader className="bg-green-50">
+                <CardTitle className="text-green-900">Notification Preferences</CardTitle>
+                <CardDescription className="text-green-700">Choose how you want to be notified about important updates.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 pt-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Email Notifications</Label>
-                      <p className="text-sm text-slate-600">Receive email notifications for important updates</p>
+                      <Label className="text-slate-700">Email Notifications</Label>
+                      <p className="text-sm text-slate-500">Receive email notifications for important updates</p>
                     </div>
                     <Switch
                       checked={notifications.emailNotifications}
@@ -263,8 +347,8 @@ export default function Settings() {
                   
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Push Notifications</Label>
-                      <p className="text-sm text-slate-600">Receive push notifications in your browser</p>
+                      <Label className="text-slate-700">Push Notifications</Label>
+                      <p className="text-sm text-slate-500">Receive push notifications in your browser</p>
                     </div>
                     <Switch
                       checked={notifications.pushNotifications}
@@ -276,8 +360,8 @@ export default function Settings() {
                   
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Meeting Reminders</Label>
-                      <p className="text-sm text-slate-600">Get reminded about upcoming meetings</p>
+                      <Label className="text-slate-700">Meeting Reminders</Label>
+                      <p className="text-sm text-slate-500">Get reminded about upcoming meetings</p>
                     </div>
                     <Switch
                       checked={notifications.meetingReminders}
@@ -289,12 +373,12 @@ export default function Settings() {
                   
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Weekly Reports</Label>
-                      <p className="text-sm text-slate-600">Receive weekly activity summaries</p>
+                      <Label className="text-slate-700">Sound Notifications</Label>
+                      <p className="text-sm text-slate-500">Play sound for notifications</p>
                     </div>
                     <Switch
-                      checked={notifications.weeklyReports}
-                      onCheckedChange={(checked) => setNotifications({...notifications, weeklyReports: checked})}
+                      checked={notifications.soundEnabled}
+                      onCheckedChange={(checked) => setNotifications({...notifications, soundEnabled: checked})}
                     />
                   </div>
                   
@@ -302,17 +386,17 @@ export default function Settings() {
                   
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Marketing Emails</Label>
-                      <p className="text-sm text-slate-600">Receive product updates and marketing emails</p>
+                      <Label className="text-slate-700">Weekly Reports</Label>
+                      <p className="text-sm text-slate-500">Receive weekly activity summaries</p>
                     </div>
                     <Switch
-                      checked={notifications.marketingEmails}
-                      onCheckedChange={(checked) => setNotifications({...notifications, marketingEmails: checked})}
+                      checked={notifications.weeklyReports}
+                      onCheckedChange={(checked) => setNotifications({...notifications, weeklyReports: checked})}
                     />
                   </div>
                 </div>
                 
-                <Button onClick={handleSaveNotifications} disabled={loading} className="w-full sm:w-auto">
+                <Button onClick={handleSaveNotifications} disabled={loading} className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
                   <Save className="w-4 h-4 mr-2" />
                   {loading ? 'Saving...' : 'Save Preferences'}
                 </Button>
@@ -321,20 +405,20 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="appearance" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Appearance Settings</CardTitle>
-                <CardDescription>Customize how the application looks and feels.</CardDescription>
+            <Card className="border-purple-200">
+              <CardHeader className="bg-purple-50">
+                <CardTitle className="text-purple-900">Appearance Settings</CardTitle>
+                <CardDescription className="text-purple-700">Customize how the application looks and feels.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 pt-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Theme</Label>
+                    <Label className="text-slate-700">Theme</Label>
                     <div className="flex gap-2">
                       <Button
                         variant={appearance.theme === 'light' ? 'default' : 'outline'}
                         onClick={() => setAppearance({...appearance, theme: 'light'})}
-                        className="flex-1"
+                        className={`flex-1 ${appearance.theme === 'light' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-300 text-purple-700 hover:bg-purple-50'}`}
                       >
                         <Sun className="w-4 h-4 mr-2" />
                         Light
@@ -342,7 +426,7 @@ export default function Settings() {
                       <Button
                         variant={appearance.theme === 'dark' ? 'default' : 'outline'}
                         onClick={() => setAppearance({...appearance, theme: 'dark'})}
-                        className="flex-1"
+                        className={`flex-1 ${appearance.theme === 'dark' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-300 text-purple-700 hover:bg-purple-50'}`}
                       >
                         <Moon className="w-4 h-4 mr-2" />
                         Dark
@@ -354,8 +438,8 @@ export default function Settings() {
                   
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Compact Mode</Label>
-                      <p className="text-sm text-slate-600">Use smaller spacing and elements</p>
+                      <Label className="text-slate-700">Compact Mode</Label>
+                      <p className="text-sm text-slate-500">Use smaller spacing and elements</p>
                     </div>
                     <Switch
                       checked={appearance.compactMode}
@@ -367,8 +451,8 @@ export default function Settings() {
                   
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Show Avatars</Label>
-                      <p className="text-sm text-slate-600">Display profile pictures throughout the app</p>
+                      <Label className="text-slate-700">Show Avatars</Label>
+                      <p className="text-sm text-slate-500">Display profile pictures throughout the app</p>
                     </div>
                     <Switch
                       checked={appearance.showAvatars}
@@ -376,29 +460,54 @@ export default function Settings() {
                     />
                   </div>
                 </div>
+                
+                <Button onClick={handleSaveAppearance} disabled={loading} className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700">
+                  <Save className="w-4 h-4 mr-2" />
+                  {loading ? 'Saving...' : 'Save Appearance'}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="security" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Security Settings</CardTitle>
-                <CardDescription>Manage your account security and privacy.</CardDescription>
+            <Card className="border-red-200">
+              <CardHeader className="bg-red-50">
+                <CardTitle className="text-red-900">Security Settings</CardTitle>
+                <CardDescription className="text-red-700">Manage your account security and privacy.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 <div className="space-y-4">
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button variant="outline" className="w-full justify-start border-red-300 text-red-700 hover:bg-red-50" onClick={handleChangePassword}>
+                    <Key className="h-4 w-4 mr-2" />
                     Change Password
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Two-Factor Authentication
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Active Sessions
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Login History
+                  <div className="flex items-center justify-between p-3 border border-red-200 rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label className="text-slate-700">Two-Factor Authentication</Label>
+                      <p className="text-sm text-slate-500">Add an extra layer of security</p>
+                    </div>
+                    <Switch
+                      checked={security.twoFactorEnabled}
+                      onCheckedChange={(checked) => setSecurity({...security, twoFactorEnabled: checked})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-slate-700">Session Timeout (minutes)</Label>
+                    <Select value={security.sessionTimeout} onValueChange={(value) => setSecurity({...security, sessionTimeout: value})}>
+                      <SelectTrigger className="border-red-300">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15">15 minutes</SelectItem>
+                        <SelectItem value="30">30 minutes</SelectItem>
+                        <SelectItem value="60">1 hour</SelectItem>
+                        <SelectItem value="120">2 hours</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button variant="outline" className="w-full justify-start border-red-300 text-red-700 hover:bg-red-50">
+                    <Lock className="h-4 w-4 mr-2" />
+                    View Login History
                   </Button>
                 </div>
               </CardContent>
@@ -406,20 +515,24 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="data" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Data Management</CardTitle>
-                <CardDescription>Export, import, and manage your data.</CardDescription>
+            <Card className="border-orange-200">
+              <CardHeader className="bg-orange-50">
+                <CardTitle className="text-orange-900">Data Management</CardTitle>
+                <CardDescription className="text-orange-700">Export, import, and manage your data.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 <div className="space-y-4">
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button variant="outline" className="w-full justify-start border-orange-300 text-orange-700 hover:bg-orange-50" onClick={handleExportData}>
+                    <Download className="h-4 w-4 mr-2" />
                     Export Data
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button variant="outline" className="w-full justify-start border-orange-300 text-orange-700 hover:bg-orange-50">
+                    <Upload className="h-4 w-4 mr-2" />
                     Import Data
                   </Button>
-                  <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                  <Separator />
+                  <Button variant="outline" className="w-full justify-start border-red-300 text-red-600 hover:bg-red-50">
+                    <Trash2 className="h-4 w-4 mr-2" />
                     Delete Account
                   </Button>
                 </div>
@@ -429,44 +542,44 @@ export default function Settings() {
 
           <TabsContent value="help" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Support</CardTitle>
-                  <CardDescription>Get help with using the application.</CardDescription>
+              <Card className="border-indigo-200">
+                <CardHeader className="bg-indigo-50">
+                  <CardTitle className="text-indigo-900">Support</CardTitle>
+                  <CardDescription className="text-indigo-700">Get help with using the application.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start">
+                <CardContent className="space-y-3 pt-6">
+                  <Button variant="outline" className="w-full justify-start border-indigo-300 text-indigo-700 hover:bg-indigo-50">
                     <HelpCircle className="w-4 h-4 mr-2" />
                     User Guide
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button variant="outline" className="w-full justify-start border-indigo-300 text-indigo-700 hover:bg-indigo-50">
                     <Mail className="w-4 h-4 mr-2" />
                     Contact Support
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button variant="outline" className="w-full justify-start border-indigo-300 text-indigo-700 hover:bg-indigo-50">
                     <Globe className="w-4 h-4 mr-2" />
                     Knowledge Base
                   </Button>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>About</CardTitle>
-                  <CardDescription>Information about the application.</CardDescription>
+              <Card className="border-indigo-200">
+                <CardHeader className="bg-indigo-50">
+                  <CardTitle className="text-indigo-900">About</CardTitle>
+                  <CardDescription className="text-indigo-700">Information about the application.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="space-y-2 pt-6">
                   <div className="flex justify-between">
-                    <span className="text-sm">Version</span>
-                    <span className="text-sm font-medium">1.0.0</span>
+                    <span className="text-sm text-slate-600">Version</span>
+                    <span className="text-sm font-medium text-slate-900">1.0.0</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Last Updated</span>
-                    <span className="text-sm font-medium">Today</span>
+                    <span className="text-sm text-slate-600">Last Updated</span>
+                    <span className="text-sm font-medium text-slate-900">Today</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">License</span>
-                    <span className="text-sm font-medium">MIT</span>
+                    <span className="text-sm text-slate-600">License</span>
+                    <span className="text-sm font-medium text-slate-900">MIT</span>
                   </div>
                 </CardContent>
               </Card>

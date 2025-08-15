@@ -1,10 +1,10 @@
+
 import React, { useState } from 'react';
 import { useMeetings, useCreateMeeting, useUpdateMeeting, useDeleteMeeting } from '@/hooks/useMeetings';
 import { useColleges } from '@/hooks/useColleges';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -19,23 +19,44 @@ import {
   Edit,
   Trash2,
   Video,
-  Phone
+  Phone,
+  ChevronLeft,
+  ChevronRight,
+  Grid3X3,
+  List
 } from 'lucide-react';
-import { format, isSameDay, parseISO } from 'date-fns';
+import { format, isSameDay, parseISO, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, startOfDay, addDays, isSameMonth } from 'date-fns';
 import { AppLayout } from "@/components/layout/AppLayout";
 
 const Meetings = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [currentWeek, setCurrentWeek] = useState<Date>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<any>(null);
+  const [view, setView] = useState<'month' | 'week' | 'day'>('week');
   
   const { data: meetings = [], isLoading } = useMeetings();
   const { data: colleges = [] } = useColleges();
   const deleteMeeting = useDeleteMeeting();
 
-  const filteredMeetings = meetings.filter(meeting => 
-    isSameDay(parseISO(meeting.meeting_date), selectedDate)
-  );
+  const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 });
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  const timeSlots = Array.from({ length: 24 }, (_, i) => i);
+
+  const getMeetingsForDay = (date: Date) => {
+    return meetings.filter(meeting => 
+      isSameDay(parseISO(meeting.meeting_date), date)
+    );
+  };
+
+  const getMeetingAtTime = (date: Date, hour: number) => {
+    return meetings.find(meeting => {
+      const meetingDate = parseISO(meeting.meeting_date);
+      return isSameDay(meetingDate, date) && meetingDate.getHours() === hour;
+    });
+  };
 
   const upcomingMeetings = meetings
     .filter(meeting => new Date(meeting.meeting_date) > new Date())
@@ -44,10 +65,10 @@ const Meetings = () => {
 
   const getOutcomeColor = (outcome: string) => {
     switch (outcome) {
-      case 'interested': return 'bg-green-100 text-green-800 border-green-200';
-      case 'follow_up': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'not_interested': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'interested': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'follow_up': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'not_interested': return 'bg-rose-100 text-rose-700 border-rose-200';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
 
@@ -84,92 +105,221 @@ const Meetings = () => {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
-        <div className="flex justify-between items-center">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-slate-50 min-h-screen">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Meetings</h1>
-            <p className="text-gray-600 mt-2">Manage your college meetings and schedules</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Meetings</h1>
+            <p className="text-slate-600 mt-1">Manage your college meetings and schedules</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Schedule Meeting
+          <div className="flex items-center gap-2">
+            <div className="flex border border-slate-300 rounded-lg bg-white">
+              <Button
+                variant={view === 'month' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setView('month')}
+                className={view === 'month' ? 'bg-blue-600 text-white' : 'text-slate-600'}
+              >
+                <Grid3X3 className="h-4 w-4 mr-1" />
+                Month
               </Button>
-            </DialogTrigger>
-            <MeetingForm 
-              open={isDialogOpen}
-              onOpenChange={handleDialogOpenChange}
-              meeting={editingMeeting}
-            />
-          </Dialog>
+              <Button
+                variant={view === 'week' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setView('week')}
+                className={view === 'week' ? 'bg-blue-600 text-white' : 'text-slate-600'}
+              >
+                <CalendarIcon className="h-4 w-4 mr-1" />
+                Week
+              </Button>
+              <Button
+                variant={view === 'day' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setView('day')}
+                className={view === 'day' ? 'bg-blue-600 text-white' : 'text-slate-600'}
+              >
+                <List className="h-4 w-4 mr-1" />
+                Day
+              </Button>
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Meeting
+                </Button>
+              </DialogTrigger>
+              <MeetingForm 
+                open={isDialogOpen}
+                onOpenChange={handleDialogOpenChange}
+                meeting={editingMeeting}
+              />
+            </Dialog>
+          </div>
         </div>
 
-        <Tabs defaultValue="calendar" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-            <TabsTrigger value="list">List View</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-          </TabsList>
+        {/* Calendar Navigation */}
+        <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentWeek(subWeeks(currentWeek, 1))}
+              className="border-slate-300"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <h2 className="text-lg font-semibold text-slate-900">
+              {view === 'week' 
+                ? `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`
+                : format(currentWeek, 'MMMM yyyy')
+              }
+            </h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
+              className="border-slate-300"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setCurrentWeek(new Date())}
+            className="border-slate-300"
+          >
+            Today
+          </Button>
+        </div>
 
-          <TabsContent value="calendar" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-1">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5" />
-                    Select Date
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => date && setSelectedDate(date)}
-                    className="rounded-md border"
-                  />
-                </CardContent>
-              </Card>
+        {/* Teams-style Calendar View */}
+        {view === 'week' && (
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+            {/* Week Header */}
+            <div className="grid grid-cols-8 border-b border-slate-200">
+              <div className="p-3 text-xs font-medium text-slate-500 border-r border-slate-200">
+                Time
+              </div>
+              {weekDays.map((day) => (
+                <div
+                  key={day.toISOString()}
+                  className={`p-3 text-center border-r border-slate-200 last:border-r-0 ${
+                    isSameDay(day, new Date()) ? 'bg-blue-50' : ''
+                  }`}
+                >
+                  <div className="text-xs font-medium text-slate-500 uppercase">
+                    {format(day, 'EEE')}
+                  </div>
+                  <div className={`text-lg font-semibold mt-1 ${
+                    isSameDay(day, new Date()) ? 'text-blue-600' : 'text-slate-900'
+                  }`}>
+                    {format(day, 'd')}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-              <Card className="lg:col-span-2">
+            {/* Time Slots */}
+            <div className="max-h-96 overflow-y-auto">
+              {timeSlots.slice(6, 20).map((hour) => (
+                <div key={hour} className="grid grid-cols-8 border-b border-slate-100 hover:bg-slate-50">
+                  <div className="p-2 text-xs text-slate-500 border-r border-slate-200 text-center">
+                    {format(new Date().setHours(hour, 0, 0, 0), 'h:mm a')}
+                  </div>
+                  {weekDays.map((day) => {
+                    const meeting = getMeetingAtTime(day, hour);
+                    return (
+                      <div
+                        key={`${day.toISOString()}-${hour}`}
+                        className="p-1 border-r border-slate-200 last:border-r-0 min-h-[60px] relative"
+                      >
+                        {meeting && (
+                          <div className="bg-blue-100 border border-blue-200 rounded p-1 text-xs cursor-pointer hover:bg-blue-200 transition-colors">
+                            <div className="font-medium text-blue-900 truncate">
+                              {meeting.title}
+                            </div>
+                            <div className="text-blue-700 truncate">
+                              {meeting.college_name}
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute top-1 right-1 h-4 w-4 p-0 opacity-0 group-hover:opacity-100"
+                                >
+                                  <MoreVertical className="h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEdit(meeting)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDelete(meeting.id)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Day View */}
+        {view === 'day' && (
+          <div className="grid gap-4 lg:grid-cols-4">
+            <div className="lg:col-span-3">
+              <Card>
                 <CardHeader>
                   <CardTitle>
-                    Meetings on {format(selectedDate, 'MMMM d, yyyy')}
+                    {format(selectedDate, 'EEEE, MMMM d, yyyy')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {filteredMeetings.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                  {getMeetingsForDay(selectedDate).length === 0 ? (
+                    <div className="text-center py-8 text-slate-500">
                       <CalendarIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>No meetings scheduled for this date</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {filteredMeetings.map((meeting) => (
-                        <div key={meeting.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      {getMeetingsForDay(selectedDate).map((meeting) => (
+                        <div key={meeting.id} className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-semibold text-lg">{meeting.title}</h3>
+                                <h3 className="font-semibold text-lg text-slate-900">{meeting.title}</h3>
                                 {meeting.outcome && (
                                   <Badge className={getOutcomeColor(meeting.outcome)}>
                                     {meeting.outcome.replace('_', ' ')}
                                   </Badge>
                                 )}
                               </div>
-                              <div className="space-y-1 text-sm text-gray-600">
+                              <div className="space-y-1 text-sm text-slate-600">
                                 <div className="flex items-center gap-2">
-                                  <Clock className="h-4 w-4" />
+                                  <Clock className="h-4 w-4 text-blue-500" />
                                   {format(parseISO(meeting.meeting_date), 'h:mm a')}
                                   {meeting.duration_minutes && ` (${meeting.duration_minutes} min)`}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <Users className="h-4 w-4" />
+                                  <Users className="h-4 w-4 text-green-500" />
                                   {meeting.college_name}
                                 </div>
                                 {meeting.location && (
                                   <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4" />
+                                    <MapPin className="h-4 w-4 text-orange-500" />
                                     {meeting.location}
                                   </div>
                                 )}
@@ -177,7 +327,7 @@ const Meetings = () => {
                             </div>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-600">
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -203,110 +353,67 @@ const Meetings = () => {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
 
-          <TabsContent value="list" className="space-y-4">
-            <div className="grid gap-4">
-              {meetings.map((meeting) => (
-                <Card key={meeting.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-lg">{meeting.title}</h3>
-                          {meeting.outcome && (
-                            <Badge className={getOutcomeColor(meeting.outcome)}>
-                              {meeting.outcome.replace('_', ' ')}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <CalendarIcon className="h-4 w-4" />
-                            {format(parseISO(meeting.meeting_date), 'MMM d, yyyy h:mm a')}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4" />
-                            {meeting.college_name}
-                          </div>
-                          {meeting.location && (
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              {meeting.location}
-                            </div>
-                          )}
-                        </div>
-                        {meeting.agenda && (
-                          <p className="mt-2 text-gray-700">{meeting.agenda}</p>
-                        )}
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(meeting)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit Meeting
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDelete(meeting.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Meeting
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700" size="sm">
+                    <Video className="h-4 w-4 mr-2" />
+                    Start Video Call
+                  </Button>
+                  <Button variant="outline" className="w-full border-slate-300" size="sm">
+                    <Phone className="h-4 w-4 mr-2" />
+                    Make Phone Call
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="upcoming" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Upcoming Meetings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {upcomingMeetings.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No upcoming meetings scheduled</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {upcomingMeetings.map((meeting) => (
-                      <div key={meeting.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h3 className="font-semibold">{meeting.title}</h3>
-                          <p className="text-sm text-gray-600">{meeting.college_name}</p>
-                          <p className="text-sm text-gray-500">
-                            {format(parseISO(meeting.meeting_date), 'MMM d, yyyy h:mm a')}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
-                            <Video className="h-4 w-4 mr-1" />
-                            Join
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Phone className="h-4 w-4 mr-1" />
-                            Call
-                          </Button>
-                        </div>
+        {/* Upcoming Meetings */}
+        {view === 'month' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-slate-900">Upcoming Meetings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {upcomingMeetings.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No upcoming meetings scheduled</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {upcomingMeetings.map((meeting) => (
+                    <div key={meeting.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg bg-white hover:shadow-sm transition-shadow">
+                      <div>
+                        <h3 className="font-semibold text-slate-900">{meeting.title}</h3>
+                        <p className="text-sm text-slate-600">{meeting.college_name}</p>
+                        <p className="text-sm text-slate-500">
+                          {format(parseISO(meeting.meeting_date), 'MMM d, yyyy h:mm a')}
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                          <Video className="h-4 w-4 mr-1" />
+                          Join
+                        </Button>
+                        <Button size="sm" variant="outline" className="border-slate-300">
+                          <Phone className="h-4 w-4 mr-1" />
+                          Call
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AppLayout>
   );
