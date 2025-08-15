@@ -102,6 +102,15 @@ const Dashboard = () => {
     }
   };
 
+  const getMeetingOutcomeBadge = (outcome: string) => {
+    switch (outcome) {
+      case 'interested': return 'bg-green-100 text-green-800';
+      case 'follow_up': return 'bg-yellow-100 text-yellow-800';
+      case 'not_interested': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (collegesLoading || meetingsLoading || contactsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -329,11 +338,7 @@ const Dashboard = () => {
                         </p>
                       </div>
                       {meeting.outcome && (
-                        <Badge className={
-                          meeting.outcome === 'successful' ? 'bg-green-100 text-green-800' :
-                          meeting.outcome === 'follow_up_needed' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }>
+                        <Badge className={getMeetingOutcomeBadge(meeting.outcome)}>
                           {meeting.outcome.replace('_', ' ')}
                         </Badge>
                       )}

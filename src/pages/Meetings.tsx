@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useMeetings, useCreateMeeting, useUpdateMeeting, useDeleteMeeting } from '@/hooks/useMeetings';
 import { useColleges } from '@/hooks/useColleges';
@@ -44,8 +43,8 @@ const Meetings = () => {
 
   const getOutcomeColor = (outcome: string) => {
     switch (outcome) {
-      case 'successful': return 'bg-green-100 text-green-800 border-green-200';
-      case 'follow_up_needed': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'interested': return 'bg-green-100 text-green-800 border-green-200';
+      case 'follow_up': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'not_interested': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -59,6 +58,13 @@ const Meetings = () => {
   const handleDelete = (meetingId: string) => {
     if (confirm('Are you sure you want to delete this meeting?')) {
       deleteMeeting.mutate(meetingId);
+    }
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingMeeting(null);
     }
   };
 
@@ -77,27 +83,18 @@ const Meetings = () => {
           <h1 className="text-3xl font-bold text-gray-900">Meetings</h1>
           <p className="text-gray-600 mt-2">Manage your college meetings and schedules</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
               <Plus className="h-4 w-4 mr-2" />
               Schedule Meeting
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingMeeting ? 'Edit Meeting' : 'Schedule New Meeting'}
-              </DialogTitle>
-            </DialogHeader>
-            <MeetingForm 
-              meeting={editingMeeting}
-              onSuccess={() => {
-                setIsDialogOpen(false);
-                setEditingMeeting(null);
-              }}
-            />
-          </DialogContent>
+          <MeetingForm 
+            open={isDialogOpen}
+            onOpenChange={handleDialogOpenChange}
+            meeting={editingMeeting}
+          />
         </Dialog>
       </div>
 

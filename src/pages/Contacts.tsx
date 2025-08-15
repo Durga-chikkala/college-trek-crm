@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useContacts, useCreateContact, useUpdateContact, useDeleteContact } from '@/hooks/useContacts';
 import { useColleges } from '@/hooks/useColleges';
@@ -97,6 +96,13 @@ const Contacts = () => {
     return colleges.find(c => c.id === collegeId)?.name || 'Unknown College';
   };
 
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingContact(null);
+    }
+  };
+
   const primaryContacts = contacts.filter(contact => contact.is_primary);
   const totalCollegesWithContacts = new Set(contacts.map(c => c.college_id)).size;
 
@@ -115,27 +121,18 @@ const Contacts = () => {
           <h1 className="text-3xl font-bold text-gray-900">Contacts</h1>
           <p className="text-gray-600 mt-2">Manage your college contacts and relationships</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700">
               <Plus className="h-4 w-4 mr-2" />
               Add Contact
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingContact ? 'Edit Contact' : 'Add New Contact'}
-              </DialogTitle>
-            </DialogHeader>
-            <ContactForm 
-              contact={editingContact}
-              onSuccess={() => {
-                setIsDialogOpen(false);
-                setEditingContact(null);
-              }}
-            />
-          </DialogContent>
+          <ContactForm 
+            open={isDialogOpen}
+            onOpenChange={handleDialogOpenChange}
+            contact={editingContact}
+          />
         </Dialog>
       </div>
 

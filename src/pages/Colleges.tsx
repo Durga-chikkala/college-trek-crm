@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useColleges, useCreateCollege, useUpdateCollege, useDeleteCollege } from '@/hooks/useColleges';
 import { useContacts } from '@/hooks/useContacts';
@@ -146,6 +145,13 @@ const Colleges = () => {
     return contacts.filter(contact => contact.college_id === collegeId);
   };
 
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingCollege(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -161,27 +167,18 @@ const Colleges = () => {
           <h1 className="text-3xl font-bold text-gray-900">Colleges</h1>
           <p className="text-gray-600 mt-2">Manage your college prospects and partnerships</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
               <Plus className="h-4 w-4 mr-2" />
               Add College
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingCollege ? 'Edit College' : 'Add New College'}
-              </DialogTitle>
-            </DialogHeader>
-            <CollegeForm 
-              college={editingCollege}
-              onSuccess={() => {
-                setIsDialogOpen(false);
-                setEditingCollege(null);
-              }}
-            />
-          </DialogContent>
+          <CollegeForm 
+            open={isDialogOpen}
+            onOpenChange={handleDialogOpenChange}
+            college={editingCollege}
+          />
         </Dialog>
       </div>
 
