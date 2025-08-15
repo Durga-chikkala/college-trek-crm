@@ -1,5 +1,6 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Building2 } from "lucide-react";
 
 const Colleges = () => {
   return (
