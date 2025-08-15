@@ -14,7 +14,7 @@ import {
   Plus,
   UserPlus,
   CalendarPlus,
-  BuildingPlus
+  Building
 } from "lucide-react";
 import {
   Sidebar,
@@ -106,7 +106,7 @@ export function AppSidebar() {
                     className="w-full justify-start text-slate-600 hover:bg-blue-50 hover:text-blue-700"
                     onClick={() => setShowCollegeForm(true)}
                   >
-                    <BuildingPlus className="w-4 h-4 mr-2" />
+                    <Building className="w-4 h-4 mr-2" />
                     Add College
                   </Button>
                   <Button 

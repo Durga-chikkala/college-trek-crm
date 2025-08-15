@@ -17,7 +17,16 @@ interface ContactFormProps {
   contact?: Tables<'contacts'> & { college_name?: string };
 }
 
-type ContactFormData = Omit<TablesInsert<'contacts'>, 'created_by' | 'created_at' | 'updated_at'>;
+type ContactFormData = {
+  name: string;
+  college_id: string;
+  designation?: string;
+  phone?: string;
+  email?: string;
+  linkedin?: string;
+  notes?: string;
+  is_primary?: boolean;
+};
 
 export const ContactForm = ({ open, onOpenChange, contact }: ContactFormProps) => {
   const { register, handleSubmit, reset, setValue, watch } = useForm<ContactFormData>({
@@ -45,7 +54,7 @@ export const ContactForm = ({ open, onOpenChange, contact }: ContactFormProps) =
     if (contact) {
       await updateContact.mutateAsync({ id: contact.id, ...data });
     } else {
-      await createContact.mutateAsync(data);
+      await createContact.mutateAsync(data as TablesInsert<'contacts'>);
     }
     reset();
     onOpenChange(false);

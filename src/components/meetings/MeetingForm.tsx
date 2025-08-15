@@ -16,7 +16,17 @@ interface MeetingFormProps {
   meeting?: Tables<'meetings'> & { college_name?: string };
 }
 
-type MeetingFormData = Omit<TablesInsert<'meetings'>, 'created_by' | 'created_at' | 'updated_at'>;
+type MeetingFormData = {
+  title: string;
+  college_id: string;
+  meeting_date: string;
+  agenda?: string;
+  discussion_notes?: string;
+  outcome?: "interested" | "follow_up" | "not_interested";
+  duration_minutes?: number;
+  location?: string;
+  next_follow_up_date?: string;
+};
 
 export const MeetingForm = ({ open, onOpenChange, meeting }: MeetingFormProps) => {
   const { register, handleSubmit, reset, setValue, watch } = useForm<MeetingFormData>({
@@ -43,7 +53,7 @@ export const MeetingForm = ({ open, onOpenChange, meeting }: MeetingFormProps) =
     if (meeting) {
       await updateMeeting.mutateAsync({ id: meeting.id, ...data });
     } else {
-      await createMeeting.mutateAsync(data);
+      await createMeeting.mutateAsync(data as TablesInsert<'meetings'>);
     }
     reset();
     onOpenChange(false);
@@ -146,8 +156,6 @@ export const MeetingForm = ({ open, onOpenChange, meeting }: MeetingFormProps) =
                   <SelectItem value="interested">Interested</SelectItem>
                   <SelectItem value="follow_up">Follow Up</SelectItem>
                   <SelectItem value="not_interested">Not Interested</SelectItem>
-                  <SelectItem value="proposal_sent">Proposal Sent</SelectItem>
-                  <SelectItem value="deal_closed">Deal Closed</SelectItem>
                 </SelectContent>
               </Select>
             </div>

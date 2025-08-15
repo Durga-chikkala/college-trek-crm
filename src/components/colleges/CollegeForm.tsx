@@ -15,7 +15,18 @@ interface CollegeFormProps {
   college?: Tables<'colleges'>;
 }
 
-type CollegeFormData = Omit<TablesInsert<'colleges'>, 'created_by' | 'created_at' | 'updated_at'>;
+type CollegeFormData = {
+  name: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pin_code?: string;
+  website?: string;
+  email?: string;
+  phone?: string;
+  status: "prospect" | "negotiation" | "closed_won" | "lost";
+  assigned_rep?: string;
+};
 
 export const CollegeForm = ({ open, onOpenChange, college }: CollegeFormProps) => {
   const { register, handleSubmit, reset, setValue, watch } = useForm<CollegeFormData>({
@@ -31,7 +42,7 @@ export const CollegeForm = ({ open, onOpenChange, college }: CollegeFormProps) =
       status: college.status,
       assigned_rep: college.assigned_rep || undefined
     } : {
-      status: 'prospect'
+      status: 'prospect' as const
     }
   });
 
@@ -43,7 +54,7 @@ export const CollegeForm = ({ open, onOpenChange, college }: CollegeFormProps) =
     if (college) {
       await updateCollege.mutateAsync({ id: college.id, ...data });
     } else {
-      await createCollege.mutateAsync(data);
+      await createCollege.mutateAsync(data as TablesInsert<'colleges'>);
     }
     reset();
     onOpenChange(false);
@@ -79,7 +90,7 @@ export const CollegeForm = ({ open, onOpenChange, college }: CollegeFormProps) =
                   <SelectItem value="prospect">Prospect</SelectItem>
                   <SelectItem value="negotiation">Negotiation</SelectItem>
                   <SelectItem value="closed_won">Closed Won</SelectItem>
-                  <SelectItem value="closed_lost">Closed Lost</SelectItem>
+                  <SelectItem value="lost">Lost</SelectItem>
                 </SelectContent>
               </Select>
             </div>
