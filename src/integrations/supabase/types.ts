@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          changed_at: string | null
+          changed_by: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string
+          table_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string | null
+          changed_by: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id: string
+          table_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string | null
+          changed_by?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string
+          table_name?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       college_courses: {
         Row: {
           assigned_at: string
@@ -242,13 +281,53 @@ export type Database = {
           },
         ]
       }
+      course_prerequisites: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          id: string
+          prerequisite_course_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          id?: string
+          prerequisite_course_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          id?: string
+          prerequisite_course_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_prerequisites_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_prerequisites_prerequisite_course_id_fkey"
+            columns: ["prerequisite_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_topics: {
         Row: {
           course_id: string
           created_at: string
           description: string | null
+          duration_minutes: number | null
           id: string
           is_manual: boolean
+          is_required: boolean | null
+          media_type: string | null
+          media_url: string | null
           order_index: number
           readme_content: string | null
           title: string
@@ -258,8 +337,12 @@ export type Database = {
           course_id: string
           created_at?: string
           description?: string | null
+          duration_minutes?: number | null
           id?: string
           is_manual?: boolean
+          is_required?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
           order_index?: number
           readme_content?: string | null
           title: string
@@ -269,8 +352,12 @@ export type Database = {
           course_id?: string
           created_at?: string
           description?: string | null
+          duration_minutes?: number | null
           id?: string
           is_manual?: boolean
+          is_required?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
           order_index?: number
           readme_content?: string | null
           title?: string
@@ -294,13 +381,19 @@ export type Database = {
           college_id: string | null
           created_at: string
           created_by: string
+          curriculum_file_path: string | null
           description: string | null
+          difficulty_level: string | null
           duration: string
+          estimated_hours: number | null
           id: string
+          learning_outcomes: string[] | null
           max_price: number | null
           min_price: number | null
           name: string
+          prerequisites: string[] | null
           pricing_model_id: string | null
+          thumbnail_url: string | null
           updated_at: string
         }
         Insert: {
@@ -310,13 +403,19 @@ export type Database = {
           college_id?: string | null
           created_at?: string
           created_by: string
+          curriculum_file_path?: string | null
           description?: string | null
+          difficulty_level?: string | null
           duration?: string
+          estimated_hours?: number | null
           id?: string
+          learning_outcomes?: string[] | null
           max_price?: number | null
           min_price?: number | null
           name: string
+          prerequisites?: string[] | null
           pricing_model_id?: string | null
+          thumbnail_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -326,13 +425,19 @@ export type Database = {
           college_id?: string | null
           created_at?: string
           created_by?: string
+          curriculum_file_path?: string | null
           description?: string | null
+          difficulty_level?: string | null
           duration?: string
+          estimated_hours?: number | null
           id?: string
+          learning_outcomes?: string[] | null
           max_price?: number | null
           min_price?: number | null
           name?: string
+          prerequisites?: string[] | null
           pricing_model_id?: string | null
+          thumbnail_url?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -348,6 +453,47 @@ export type Database = {
             columns: ["pricing_model_id"]
             isOneToOne: false
             referencedRelation: "pricing_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      enrollment_projections: {
+        Row: {
+          academic_year: string
+          college_course_id: string
+          created_at: string | null
+          created_by: string
+          id: string
+          projected_enrollments: number
+          semester: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          academic_year: string
+          college_course_id: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          projected_enrollments: number
+          semester?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          academic_year?: string
+          college_course_id?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          projected_enrollments?: number
+          semester?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollment_projections_college_course_id_fkey"
+            columns: ["college_course_id"]
+            isOneToOne: false
+            referencedRelation: "college_courses"
             referencedColumns: ["id"]
           },
         ]
@@ -507,50 +653,88 @@ export type Database = {
           conditions: Json | null
           created_at: string
           created_by: string
+          currency: string | null
           description: string | null
           discount_percentage: number | null
+          discount_type: string | null
+          discount_value: number | null
+          effective_from: string | null
+          effective_until: string | null
           id: string
           is_active: boolean | null
+          is_current_version: boolean | null
           markup_percentage: number | null
           max_price: number | null
           min_price: number | null
           name: string
+          parent_version_id: string | null
           pricing_type: string
+          referral_conditions: Json | null
+          tier: string | null
           updated_at: string
+          version: number | null
         }
         Insert: {
           base_price: number
           conditions?: Json | null
           created_at?: string
           created_by: string
+          currency?: string | null
           description?: string | null
           discount_percentage?: number | null
+          discount_type?: string | null
+          discount_value?: number | null
+          effective_from?: string | null
+          effective_until?: string | null
           id?: string
           is_active?: boolean | null
+          is_current_version?: boolean | null
           markup_percentage?: number | null
           max_price?: number | null
           min_price?: number | null
           name: string
+          parent_version_id?: string | null
           pricing_type?: string
+          referral_conditions?: Json | null
+          tier?: string | null
           updated_at?: string
+          version?: number | null
         }
         Update: {
           base_price?: number
           conditions?: Json | null
           created_at?: string
           created_by?: string
+          currency?: string | null
           description?: string | null
           discount_percentage?: number | null
+          discount_type?: string | null
+          discount_value?: number | null
+          effective_from?: string | null
+          effective_until?: string | null
           id?: string
           is_active?: boolean | null
+          is_current_version?: boolean | null
           markup_percentage?: number | null
           max_price?: number | null
           min_price?: number | null
           name?: string
+          parent_version_id?: string | null
           pricing_type?: string
+          referral_conditions?: Json | null
+          tier?: string | null
           updated_at?: string
+          version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pricing_models_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_models"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -584,6 +768,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      sales_deals: {
+        Row: {
+          actual_close_date: string | null
+          assigned_to: string | null
+          college_id: string
+          created_at: string | null
+          created_by: string
+          currency: string | null
+          deal_name: string
+          deal_value: number | null
+          expected_close_date: string | null
+          id: string
+          notes: string | null
+          probability: number | null
+          stage: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_close_date?: string | null
+          assigned_to?: string | null
+          college_id: string
+          created_at?: string | null
+          created_by: string
+          currency?: string | null
+          deal_name: string
+          deal_value?: number | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          probability?: number | null
+          stage?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_close_date?: string | null
+          assigned_to?: string | null
+          college_id?: string
+          created_at?: string | null
+          created_by?: string
+          currency?: string | null
+          deal_name?: string
+          deal_value?: number | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          probability?: number | null
+          stage?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_deals_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags: {
         Row: {
@@ -632,6 +875,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_pricing_recommendations: {
+        Args: { target_college_id: string }
+        Returns: {
+          confidence_score: number
+          reasoning: string
+          recommended_base_price: number
+          recommended_tier: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
