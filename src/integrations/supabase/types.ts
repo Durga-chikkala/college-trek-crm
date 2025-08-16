@@ -154,6 +154,106 @@ export type Database = {
           },
         ]
       }
+      course_topics: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_manual: boolean
+          order_index: number
+          readme_content: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_manual?: boolean
+          order_index?: number
+          readme_content?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_manual?: boolean
+          order_index?: number
+          readme_content?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_topics_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          base_price: number
+          capacity: number
+          category: string
+          college_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          duration: string
+          id: string
+          max_price: number | null
+          min_price: number | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          base_price: number
+          capacity?: number
+          category?: string
+          college_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          duration?: string
+          id?: string
+          max_price?: number | null
+          min_price?: number | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          capacity?: number
+          category?: string
+          college_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          duration?: string
+          id?: string
+          max_price?: number | null
+          min_price?: number | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       files: {
         Row: {
           college_id: string | null

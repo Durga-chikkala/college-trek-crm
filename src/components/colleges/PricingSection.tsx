@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -17,81 +18,77 @@ import {
   Target,
   Plus,
   Edit,
-  Trash2
+  Trash2,
+  BarChart3,
+  PieChart,
+  Settings
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-
-interface Course {
-  id: string;
-  name: string;
-  category: string;
-  basePrice: number;
-  minPrice: number;
-  maxPrice: number;
-  duration: string;
-  capacity: number;
-  description: string;
-}
+import { useCourses, useCreateCourse, useUpdateCourse, useDeleteCourse } from '@/hooks/useCourses';
+import { CourseStructureSection } from './CourseStructureSection';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell } from 'recharts';
 
 interface PricingSectionProps {
   collegeId: string;
 }
 
 export const PricingSection = ({ collegeId }: PricingSectionProps) => {
-  const [courses, setCourses] = useState<Course[]>([
-    {
-      id: '1',
-      name: 'B.Tech Computer Science',
-      category: 'Engineering',
-      basePrice: 120000,
-      minPrice: 100000,
-      maxPrice: 150000,
-      duration: '4 years',
-      capacity: 120,
-      description: 'Computer Science and Engineering program'
-    },
-    {
-      id: '2',
-      name: 'MBA',
-      category: 'Management',
-      basePrice: 200000,
-      minPrice: 180000,
-      maxPrice: 250000,
-      duration: '2 years',
-      capacity: 60,
-      description: 'Master of Business Administration'
-    }
-  ]);
+  const { data: courses = [], isLoading } = useCourses(collegeId);
+  const createCourseMutation = useCreateCourse();
+  const updateCourseMutation = useUpdateCourse();
+  const deleteCourseMutation = useDeleteCourse();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [newCourse, setNewCourse] = useState<Partial<Course>>({
+  const [editingCourse, setEditingCourse] = useState<any>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [newCourse, setNewCourse] = useState({
     name: '',
     category: '',
-    basePrice: 0,
-    minPrice: 0,
-    maxPrice: 0,
+    base_price: 0,
+    min_price: 0,
+    max_price: 0,
     duration: '',
     capacity: 0,
     description: ''
   });
 
-  const handleAddCourse = () => {
-    if (newCourse.name && newCourse.basePrice) {
-      const course: Course = {
-        id: Date.now().toString(),
-        name: newCourse.name,
-        category: newCourse.category || 'Other',
-        basePrice: newCourse.basePrice,
-        minPrice: newCourse.minPrice || newCourse.basePrice * 0.8,
-        maxPrice: newCourse.maxPrice || newCourse.basePrice * 1.2,
-        duration: newCourse.duration || '1 year',
-        capacity: newCourse.capacity || 50,
-        description: newCourse.description || ''
-      };
-      setCourses([...courses, course]);
-      setNewCourse({});
-      setIsDialogOpen(false);
+  const handleCreateCourse = async () => {
+    if (!newCourse.name || !newCourse.base_price) return;
+
+    const courseData = {
+      college_id: collegeId,
+      name: newCourse.name,
+      category: newCourse.category || 'Other',
+      base_price: newCourse.base_price,
+      min_price: newCourse.min_price || newCourse.base_price * 0.8,
+      max_price: newCourse.max_price || newCourse.base_price * 1.2,
+      duration: newCourse.duration || '1 year',
+      capacity: newCourse.capacity || 50,
+      description: newCourse.description || null
+    };
+
+    await createCourseMutation.mutateAsync(courseData);
+    setNewCourse({
+      name: '',
+      category: '',
+      base_price: 0,
+      min_price: 0,
+      max_price: 0,
+      duration: '',
+      capacity: 0,
+      description: ''
+    });
+    setIsDialogOpen(false);
+  };
+
+  const handleUpdateCourse = async (courseId: string, updates: any) => {
+    await updateCourseMutation.mutateAsync({ id: courseId, ...updates });
+    setEditingCourse(null);
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    if (confirm('Are you sure you want to delete this course? This will also delete all associated topics.')) {
+      await deleteCourseMutation.mutateAsync(courseId);
     }
   };
 
@@ -115,12 +112,70 @@ export const PricingSection = ({ collegeId }: PricingSectionProps) => {
     return colors[category as keyof typeof colors] || colors.Other;
   };
 
+  // Prepare chart data
+  const chartData = courses.map(course => ({
+    name: course.name.substring(0, 15) + (course.name.length > 15 ? '...' : ''),
+    basePrice: Number(course.base_price),
+    minPrice: Number(course.min_price || 0),
+    maxPrice: Number(course.max_price || 0),
+    capacity: course.capacity
+  }));
+
+  const categoryData = courses.reduce((acc: any[], course) => {
+    const existing = acc.find(item => item.name === course.category);
+    if (existing) {
+      existing.value += 1;
+      existing.totalPrice += Number(course.base_price);
+    } else {
+      acc.push({
+        name: course.category,
+        value: 1,
+        totalPrice: Number(course.base_price)
+      });
+    }
+    return acc;
+  }, []);
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (selectedCourseId) {
+    const selectedCourse = courses.find(c => c.id === selectedCourseId);
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setSelectedCourseId(null)}
+            className="border-primary/20 hover:bg-primary/5"
+          >
+            ← Back to Pricing
+          </Button>
+          <h2 className="text-xl font-semibold text-foreground">
+            Course Structure - {selectedCourse?.name}
+          </h2>
+        </div>
+        <CourseStructureSection 
+          courseId={selectedCourseId} 
+          courseName={selectedCourse?.name || ''} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h3 className="text-xl font-semibold text-foreground">Course Pricing</h3>
-          <p className="text-muted-foreground">Manage course pricing and capacity</p>
+          <h3 className="text-xl font-semibold text-foreground">Course Pricing Management</h3>
+          <p className="text-muted-foreground">Manage course pricing, capacity, and structure</p>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -138,7 +193,7 @@ export const PricingSection = ({ collegeId }: PricingSectionProps) => {
               <div className="space-y-2">
                 <Label>Course Name *</Label>
                 <Input
-                  value={newCourse.name || ''}
+                  value={newCourse.name}
                   onChange={(e) => setNewCourse({...newCourse, name: e.target.value})}
                   placeholder="Enter course name"
                 />
@@ -163,15 +218,15 @@ export const PricingSection = ({ collegeId }: PricingSectionProps) => {
                 <Label>Base Price (₹) *</Label>
                 <Input
                   type="number"
-                  value={newCourse.basePrice || ''}
-                  onChange={(e) => setNewCourse({...newCourse, basePrice: Number(e.target.value)})}
+                  value={newCourse.base_price || ''}
+                  onChange={(e) => setNewCourse({...newCourse, base_price: Number(e.target.value)})}
                   placeholder="100000"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Duration</Label>
                 <Input
-                  value={newCourse.duration || ''}
+                  value={newCourse.duration}
                   onChange={(e) => setNewCourse({...newCourse, duration: e.target.value})}
                   placeholder="4 years"
                 />
@@ -180,8 +235,8 @@ export const PricingSection = ({ collegeId }: PricingSectionProps) => {
                 <Label>Minimum Price (₹)</Label>
                 <Input
                   type="number"
-                  value={newCourse.minPrice || ''}
-                  onChange={(e) => setNewCourse({...newCourse, minPrice: Number(e.target.value)})}
+                  value={newCourse.min_price || ''}
+                  onChange={(e) => setNewCourse({...newCourse, min_price: Number(e.target.value)})}
                   placeholder="80000"
                 />
               </div>
@@ -189,8 +244,8 @@ export const PricingSection = ({ collegeId }: PricingSectionProps) => {
                 <Label>Maximum Price (₹)</Label>
                 <Input
                   type="number"
-                  value={newCourse.maxPrice || ''}
-                  onChange={(e) => setNewCourse({...newCourse, maxPrice: Number(e.target.value)})}
+                  value={newCourse.max_price || ''}
+                  onChange={(e) => setNewCourse({...newCourse, max_price: Number(e.target.value)})}
                   placeholder="120000"
                 />
               </div>
@@ -206,7 +261,7 @@ export const PricingSection = ({ collegeId }: PricingSectionProps) => {
               <div className="space-y-2 md:col-span-2">
                 <Label>Description</Label>
                 <Textarea
-                  value={newCourse.description || ''}
+                  value={newCourse.description}
                   onChange={(e) => setNewCourse({...newCourse, description: e.target.value})}
                   placeholder="Course description"
                   rows={3}
@@ -217,124 +272,247 @@ export const PricingSection = ({ collegeId }: PricingSectionProps) => {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddCourse}>
-                Add Course
+              <Button onClick={handleCreateCourse} disabled={createCourseMutation.isPending}>
+                {createCourseMutation.isPending ? 'Creating...' : 'Create Course'}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Pricing Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-700">Average Course Price</p>
-                <p className="text-2xl font-bold text-blue-900">
-                  {formatPrice(courses.reduce((sum, course) => sum + course.basePrice, 0) / courses.length || 0)}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-500 rounded-full">
-                <DollarSign className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {courses.length > 0 && (
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="charts">Analytics</TabsTrigger>
+            <TabsTrigger value="courses">Courses</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-700">Total Courses</p>
-                <p className="text-2xl font-bold text-green-900">{courses.length}</p>
-              </div>
-              <div className="p-3 bg-green-500 rounded-full">
-                <BookOpen className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-700">Total Capacity</p>
-                <p className="text-2xl font-bold text-purple-900">
-                  {courses.reduce((sum, course) => sum + course.capacity, 0)}
-                </p>
-              </div>
-              <div className="p-3 bg-purple-500 rounded-full">
-                <Users className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Course List */}
-      <div className="grid gap-4">
-        {courses.map((course) => (
-          <Card key={course.id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-                    <h4 className="text-lg font-semibold text-foreground">{course.name}</h4>
-                    <Badge className={getCategoryColor(course.category)}>
-                      {course.category}
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Target className="h-4 w-4 text-primary" />
-                      <span className="text-muted-foreground">Base: </span>
-                      <span className="font-medium">{formatPrice(course.basePrice)}</span>
+          <TabsContent value="overview" className="space-y-6">
+            {/* Overview Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100/50">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-700">Average Price</p>
+                      <p className="text-2xl font-bold text-blue-900">
+                        {formatPrice(courses.reduce((sum, course) => sum + Number(course.base_price), 0) / courses.length)}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <TrendingDown className="h-4 w-4 text-red-500" />
-                      <span className="text-muted-foreground">Min: </span>
-                      <span className="font-medium">{formatPrice(course.minPrice)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-green-500" />
-                      <span className="text-muted-foreground">Max: </span>
-                      <span className="font-medium">{formatPrice(course.maxPrice)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-blue-500" />
-                      <span className="text-muted-foreground">Capacity: </span>
-                      <span className="font-medium">{course.capacity}</span>
+                    <div className="p-3 bg-blue-500 rounded-full">
+                      <DollarSign className="h-6 w-6 text-white" />
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      {course.duration}
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100/50">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-700">Total Courses</p>
+                      <p className="text-2xl font-bold text-green-900">{courses.length}</p>
                     </div>
-                    {course.description && (
-                      <p className="truncate">{course.description}</p>
-                    )}
+                    <div className="p-3 bg-green-500 rounded-full">
+                      <BookOpen className="h-6 w-6 text-white" />
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100/50">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-700">Total Capacity</p>
+                      <p className="text-2xl font-bold text-purple-900">
+                        {courses.reduce((sum, course) => sum + course.capacity, 0)}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-purple-500 rounded-full">
+                      <Users className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-orange-100/50">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-orange-700">Revenue Potential</p>
+                      <p className="text-2xl font-bold text-orange-900">
+                        {formatPrice(courses.reduce((sum, course) => sum + (Number(course.base_price) * course.capacity), 0))}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-orange-500 rounded-full">
+                      <Target className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="charts" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Price Comparison
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => formatPrice(Number(value))} />
+                      <Legend />
+                      <Bar dataKey="minPrice" fill="#ef4444" name="Min Price" />
+                      <Bar dataKey="basePrice" fill="#3b82f6" name="Base Price" />
+                      <Bar dataKey="maxPrice" fill="#10b981" name="Max Price" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PieChart className="h-5 w-5" />
+                    Category Distribution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <RechartsPieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, value }) => `${name} (${value})`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="courses" className="space-y-4">
+            {courses.map((course) => (
+              <Card key={course.id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                        <h4 className="text-lg font-semibold text-foreground">{course.name}</h4>
+                        <Badge className={getCategoryColor(course.category)}>
+                          {course.category}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Target className="h-4 w-4 text-primary" />
+                          <span className="text-muted-foreground">Base: </span>
+                          <span className="font-medium">{formatPrice(Number(course.base_price))}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <TrendingDown className="h-4 w-4 text-red-500" />
+                          <span className="text-muted-foreground">Min: </span>
+                          <span className="font-medium">{formatPrice(Number(course.min_price || 0))}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-green-500" />
+                          <span className="text-muted-foreground">Max: </span>
+                          <span className="font-medium">{formatPrice(Number(course.max_price || 0))}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-blue-500" />
+                          <span className="text-muted-foreground">Capacity: </span>
+                          <span className="font-medium">{course.capacity}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {course.duration}
+                        </div>
+                        {course.description && (
+                          <p className="truncate">{course.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedCourseId(course.id)}
+                      >
+                        <Settings className="h-4 w-4 mr-1" />
+                        Structure
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEditingCourse(course)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteCourse(course.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pricing Settings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Additional pricing configuration options will be available here.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {courses.length === 0 && (
+        <Card className="border-dashed">
+          <CardContent className="p-12 text-center">
+            <BookOpen className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-muted-foreground mb-2">No courses yet</h3>
+            <p className="text-muted-foreground">Get started by adding your first course</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
