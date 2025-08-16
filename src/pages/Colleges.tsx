@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useColleges, useDeleteCollege } from '@/hooks/useColleges';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CollegeForm } from '@/components/colleges/CollegeForm';
 import { PricingSection } from '@/components/colleges/PricingSection';
+import { AdvancedPricingManagement } from '@/components/colleges/AdvancedPricingManagement';
 import { 
   Building2, 
   MapPin, 
@@ -37,6 +37,7 @@ const Colleges = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCollege, setEditingCollege] = useState<any>(null);
   const [selectedCollegeId, setSelectedCollegeId] = useState<string | null>(null);
+  const [pricingView, setPricingView] = useState<'basic' | 'advanced'>('basic');
   
   const { data: colleges = [], isLoading } = useColleges();
   const deleteCollege = useDeleteCollege();
@@ -153,19 +154,46 @@ const Colleges = () => {
         {/* Main Content */}
         {selectedCollegeId ? (
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                onClick={() => setSelectedCollegeId(null)}
-                className="border-primary/20 hover:bg-primary/5"
-              >
-                ← Back to Colleges
-              </Button>
-              <h2 className="text-xl font-semibold text-foreground">
-                {colleges.find(c => c.id === selectedCollegeId)?.name} - Pricing Management
-              </h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedCollegeId(null)}
+                  className="border-primary/20 hover:bg-primary/5"
+                >
+                  ← Back to Colleges
+                </Button>
+                <h2 className="text-xl font-semibold text-foreground">
+                  {colleges.find(c => c.id === selectedCollegeId)?.name} - Pricing Management
+                </h2>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={pricingView === 'basic' ? 'default' : 'outline'}
+                  onClick={() => setPricingView('basic')}
+                  size="sm"
+                >
+                  Basic
+                </Button>
+                <Button
+                  variant={pricingView === 'advanced' ? 'default' : 'outline'}
+                  onClick={() => setPricingView('advanced')}
+                  size="sm"
+                >
+                  Advanced
+                </Button>
+              </div>
             </div>
-            <PricingSection collegeId={selectedCollegeId} />
+            
+            {pricingView === 'basic' ? (
+              <PricingSection collegeId={selectedCollegeId} />
+            ) : (
+              <AdvancedPricingManagement 
+                collegeId={selectedCollegeId} 
+                collegeName={colleges.find(c => c.id === selectedCollegeId)?.name || ''} 
+              />
+            )}
           </div>
         ) : (
           <Tabs defaultValue="grid" className="space-y-6">
