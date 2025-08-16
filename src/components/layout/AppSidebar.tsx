@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { 
   Building2, 
   Calendar, 
@@ -60,6 +61,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showCollegeForm, setShowCollegeForm] = useState(false);
@@ -76,24 +78,28 @@ export function AppSidebar() {
     ? `${user.user_metadata.first_name[0]}${user.user_metadata.last_name[0]}`
     : user?.email?.[0]?.toUpperCase() || "U";
 
+  const handleNavigation = (href: string) => {
+    navigate(href);
+  };
+
   return (
     <>
-      <Sidebar className={`${collapsed ? "w-16" : "w-64"} border-r border-slate-200`}>
+      <Sidebar className={`${collapsed ? "w-16" : "w-64"} border-r border-slate-200 flex-shrink-0`}>
         <SidebarHeader className="border-b border-slate-200 p-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
               <Building2 className="w-5 h-5 text-white" />
             </div>
             {!collapsed && (
-              <div>
-                <h2 className="font-semibold text-slate-900">College Sales</h2>
-                <p className="text-xs text-slate-500">CRM Platform</p>
+              <div className="min-w-0">
+                <h2 className="font-semibold text-slate-900 truncate">College Sales</h2>
+                <p className="text-xs text-slate-500 truncate">CRM Platform</p>
               </div>
             )}
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="flex-1 p-2">
+        <SidebarContent className="flex-1 p-2 overflow-y-auto">
           {!collapsed && (
             <div className="mb-4">
               <Button
@@ -148,13 +154,13 @@ export function AppSidebar() {
                 {navigation.map((item) => (
                   <SidebarMenuItem key={item.name}>
                     <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.href}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${getNavClasses(item.href)}`}
+                      <button
+                        onClick={() => handleNavigation(item.href)}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 w-full text-left ${getNavClasses(item.href)}`}
                       >
-                        <item.icon className="w-5 h-5" />
-                        {!collapsed && <span>{item.name}</span>}
-                      </NavLink>
+                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                        {!collapsed && <span className="truncate">{item.name}</span>}
+                      </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -171,13 +177,13 @@ export function AppSidebar() {
                 {bottomNavigation.map((item) => (
                   <SidebarMenuItem key={item.name}>
                     <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.href}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${getNavClasses(item.href)}`}
+                      <button
+                        onClick={() => handleNavigation(item.href)}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 w-full text-left ${getNavClasses(item.href)}`}
                       >
-                        <item.icon className="w-5 h-5" />
-                        {!collapsed && <span>{item.name}</span>}
-                      </NavLink>
+                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                        {!collapsed && <span className="truncate">{item.name}</span>}
+                      </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -188,7 +194,7 @@ export function AppSidebar() {
 
         <SidebarFooter className="border-t border-slate-200 p-3">
           <div className="flex items-center gap-3">
-            <Avatar className="w-8 h-8">
+            <Avatar className="w-8 h-8 flex-shrink-0">
               <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white text-sm">
                 {userInitials}
               </AvatarFallback>
@@ -205,7 +211,7 @@ export function AppSidebar() {
               variant="ghost"
               size="sm"
               onClick={signOut}
-              className="text-slate-500 hover:text-red-600 hover:bg-red-50"
+              className="text-slate-500 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
             >
               <LogOut className="w-4 h-4" />
             </Button>
