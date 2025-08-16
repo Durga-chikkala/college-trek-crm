@@ -4,21 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
-export type SalesDeal = Tables<'sales_deals'>;
-export type SalesDealInsert = TablesInsert<'sales_deals'>;
-export type SalesDealUpdate = TablesUpdate<'sales_deals'>;
-
 export const useSalesDeals = (collegeId?: string) => {
   return useQuery({
-    queryKey: ['sales_deals', collegeId],
+    queryKey: ['sales-deals', collegeId],
     queryFn: async () => {
       let query = supabase
         .from('sales_deals')
         .select(`
           *,
-          colleges(name),
-          profiles!sales_deals_created_by_fkey(first_name, last_name),
-          assigned_profiles:profiles!sales_deals_assigned_to_fkey(first_name, last_name)
+          colleges (
+            name,
+            city,
+            state
+          ),
+          profiles!sales_deals_assigned_to_fkey (
+            first_name,
+            last_name
+          )
         `)
         .order('created_at', { ascending: false });
 
@@ -43,21 +45,28 @@ export const useCreateSalesDeal = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (deal: SalesDealInsert) => {
+    mutationFn: async (deal: Omit<TablesInsert<'sales_deals'>, 'created_by'>) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
         .from('sales_deals')
         .insert([{ ...deal, created_by: user.id }])
-        .select()
+        .select(`
+          *,
+          colleges (
+            name,
+            city,
+            state
+          )
+        `)
         .single();
 
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sales_deals'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-deals'] });
       toast({ title: "Success", description: "Sales deal created successfully" });
     },
     onError: (error) => {
@@ -72,24 +81,55 @@ export const useUpdateSalesDeal = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: SalesDealUpdate & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: TablesUpdate<'sales_deals'> & { id: string }) => {
       const { data, error } = await supabase
         .from('sales_deals')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select(`
+          *,
+          colleges (
+            name,
+            city,
+            state
+          )
+        `)
         .single();
 
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sales_deals'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-deals'] });
       toast({ title: "Success", description: "Sales deal updated successfully" });
     },
     onError: (error) => {
       console.error('Error updating sales deal:', error);
       toast({ title: "Error", description: "Failed to update sales deal", variant: "destructive" });
+    },
+  });
+};
+
+export const useDeleteSalesDeal = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('sales_deals')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales-deals'] });
+      toast({ title: "Success", description: "Sales deal deleted successfully" });
+    },
+    onError: (error) => {
+      console.error('Error deleting sales deal:', error);
+      toast({ title: "Error", description: "Failed to delete sales deal", variant: "destructive" });
     },
   });
 };

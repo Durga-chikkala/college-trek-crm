@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
@@ -14,7 +13,11 @@ import {
   Plus,
   UserPlus,
   CalendarPlus,
-  Building
+  Building,
+  DollarSign,
+  BookOpen,
+  TrendingUp,
+  Activity
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,9 +42,13 @@ import { MeetingForm } from "@/components/meetings/MeetingForm";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
   { name: "Colleges", href: "/colleges", icon: Building2 },
+  { name: "Pricing Models", href: "/pricing", icon: DollarSign },
+  { name: "Course Management", href: "/courses", icon: BookOpen },
+  { name: "Sales Deals", href: "/sales", icon: TrendingUp },
   { name: "Meetings", href: "/meetings", icon: Calendar },
   { name: "Contacts", href: "/contacts", icon: Users },
   { name: "Search", href: "/search", icon: Search },
+  { name: "Audit Logs", href: "/audit", icon: Activity },
 ];
 
 const bottomNavigation = [

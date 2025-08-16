@@ -9,11 +9,15 @@ import { PWAInstaller } from "@/components/PWAInstaller";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Colleges from "./pages/Colleges";
+import PricingModels from "./pages/PricingModels";
+import CourseManagement from "./pages/CourseManagement";
+import SalesDeals from "./pages/SalesDeals";
 import Meetings from "./pages/Meetings";
 import Contacts from "./pages/Contacts";
 import Settings from "./pages/Settings";
 import UserGuide from "./pages/UserGuide";
 import Search from "./pages/Search";
+import AuditLogs from "./pages/AuditLogs";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 
@@ -50,9 +54,13 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/colleges" element={<Colleges />} />
+              <Route path="/pricing" element={<PricingModels />} />
+              <Route path="/courses" element={<CourseManagement />} />
+              <Route path="/sales" element={<SalesDeals />} />
               <Route path="/meetings" element={<Meetings />} />
               <Route path="/contacts" element={<Contacts />} />
               <Route path="/search" element={<Search />} />
+              <Route path="/audit" element={<AuditLogs />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/guide" element={<UserGuide />} />
               <Route path="*" element={<NotFound />} />
