@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,8 @@ import {
   Settings
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useCourses, useCreateCourse, useUpdateCourse, useDeleteCourse } from '@/hooks/useCourses';
+import { useCreateCourse, useUpdateCourse, useDeleteCourse } from '@/hooks/useCourses';
+import { useCollegeCourses } from '@/hooks/useCollegeCourses';
 import { CourseStructureSection } from './CourseStructureSection';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, Pie } from 'recharts';
 
@@ -33,10 +33,13 @@ interface PricingSectionProps {
 }
 
 export const PricingSection = ({ collegeId }: PricingSectionProps) => {
-  const { data: courses = [], isLoading } = useCourses(collegeId);
+  const { data: collegeCourses = [], isLoading } = useCollegeCourses(collegeId);
   const createCourseMutation = useCreateCourse();
   const updateCourseMutation = useUpdateCourse();
   const deleteCourseMutation = useDeleteCourse();
+
+  // Extract courses from college courses
+  const courses = collegeCourses.map(cc => cc.courses).filter(Boolean);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<any>(null);

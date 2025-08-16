@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line, ResponsiveContainer } from 'recharts';
-import { useCourses, useUpdateCourse } from '@/hooks/useCourses';
+import { useUpdateCourse } from '@/hooks/useCourses';
+import { useCollegeCourses } from '@/hooks/useCollegeCourses';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -30,10 +30,13 @@ interface SimplifiedPricingDashboardProps {
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
 export const SimplifiedPricingDashboard = ({ collegeId, collegeName }: SimplifiedPricingDashboardProps) => {
-  const { data: courses = [], isLoading } = useCourses(collegeId);
+  const { data: collegeCourses = [], isLoading } = useCollegeCourses(collegeId);
   const updateCourseMutation = useUpdateCourse();
   const [editingCourse, setEditingCourse] = useState<string | null>(null);
   const [priceData, setPriceData] = useState<{ [key: string]: number }>({});
+
+  // Extract courses from college courses
+  const courses = collegeCourses.map(cc => cc.courses).filter(Boolean);
 
   // Prepare chart data
   const chartData = courses.map(course => ({
