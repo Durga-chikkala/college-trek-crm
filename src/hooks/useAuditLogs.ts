@@ -41,7 +41,15 @@ export const useAuditLogs = () => {
 
       // Transform the data to match our interface
       const transformedData: AuditLog[] = (data || []).map(log => ({
-        ...log,
+        id: log.id,
+        table_name: log.table_name,
+        record_id: log.record_id,
+        action: log.action,
+        old_values: log.old_values,
+        new_values: log.new_values,
+        changed_at: log.changed_at || '',
+        ip_address: log.ip_address as string | null,
+        user_agent: log.user_agent as string | null,
         user_profile: log.profiles ? {
           first_name: log.profiles.first_name,
           last_name: log.profiles.last_name
