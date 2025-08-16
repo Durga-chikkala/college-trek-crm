@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 export type Course = Tables<'courses'>;
-export type CourseInsert = TablesInsert<'courses'>;
+export type CourseInsert = Omit<TablesInsert<'courses'>, 'created_by'>;
 export type CourseUpdate = TablesUpdate<'courses'>;
 
 export const useCourses = (collegeId?: string) => {
