@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateMeeting, useUpdateMeeting } from "@/hooks/useMeetings";
 import { useColleges } from "@/hooks/useColleges";
+import { formatToIST, parseFromIST } from "@/utils/timezone";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 interface MeetingFormProps {
@@ -33,7 +34,7 @@ export const MeetingForm = ({ open, onOpenChange, meeting }: MeetingFormProps) =
     defaultValues: meeting ? {
       title: meeting.title,
       college_id: meeting.college_id,
-      meeting_date: meeting.meeting_date,
+      meeting_date: formatToIST(meeting.meeting_date),
       agenda: meeting.agenda || '',
       discussion_notes: meeting.discussion_notes || '',
       outcome: meeting.outcome || undefined,
@@ -50,10 +51,15 @@ export const MeetingForm = ({ open, onOpenChange, meeting }: MeetingFormProps) =
   const outcome = watch('outcome');
 
   const onSubmit = async (data: MeetingFormData) => {
+    const meetingData = {
+      ...data,
+      meeting_date: parseFromIST(data.meeting_date).toISOString()
+    };
+
     if (meeting) {
-      await updateMeeting.mutateAsync({ id: meeting.id, ...data });
+      await updateMeeting.mutateAsync({ id: meeting.id, ...meetingData });
     } else {
-      await createMeeting.mutateAsync(data as TablesInsert<'meetings'>);
+      await createMeeting.mutateAsync(meetingData as TablesInsert<'meetings'>);
     }
     reset();
     onOpenChange(false);
@@ -63,26 +69,27 @@ export const MeetingForm = ({ open, onOpenChange, meeting }: MeetingFormProps) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {meeting ? "Edit Meeting" : "Add New Meeting"}
+          <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            {meeting ? "Edit Meeting" : "Schedule New Meeting"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="title">Meeting Title *</Label>
+              <Label htmlFor="title" className="text-sm font-medium text-foreground">Meeting Title *</Label>
               <Input
                 id="title"
                 {...register("title", { required: true })}
                 placeholder="Enter meeting title"
+                className="border-border/50 focus:border-primary"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="college_id">College *</Label>
+              <Label htmlFor="college_id" className="text-sm font-medium text-foreground">College *</Label>
               <Select value={collegeId} onValueChange={(value) => setValue('college_id', value)}>
-                <SelectTrigger>
+                <SelectTrigger className="border-border/50 focus:border-primary">
                   <SelectValue placeholder="Select college" />
                 </SelectTrigger>
                 <SelectContent>
@@ -96,89 +103,102 @@ export const MeetingForm = ({ open, onOpenChange, meeting }: MeetingFormProps) =
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="meeting_date">Meeting Date & Time *</Label>
+              <Label htmlFor="meeting_date" className="text-sm font-medium text-foreground">
+                Meeting Date & Time (IST) *
+              </Label>
               <Input
                 id="meeting_date"
                 type="datetime-local"
                 {...register("meeting_date", { required: true })}
+                className="border-border/50 focus:border-primary"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="duration_minutes">Duration (minutes)</Label>
+              <Label htmlFor="duration_minutes" className="text-sm font-medium text-foreground">Duration (minutes)</Label>
               <Input
                 id="duration_minutes"
                 type="number"
                 {...register("duration_minutes", { valueAsNumber: true })}
                 placeholder="e.g., 60"
+                className="border-border/50 focus:border-primary"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
+            <Label htmlFor="location" className="text-sm font-medium text-foreground">Location</Label>
             <Input
               id="location"
               {...register("location")}
-              placeholder="Meeting location"
+              placeholder="Meeting location or video call link"
+              className="border-border/50 focus:border-primary"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="agenda">Agenda</Label>
+            <Label htmlFor="agenda" className="text-sm font-medium text-foreground">Agenda</Label>
             <Textarea
               id="agenda"
               {...register("agenda")}
               placeholder="Meeting agenda and objectives"
               rows={3}
+              className="border-border/50 focus:border-primary resize-none"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="discussion_notes">Discussion Notes</Label>
+            <Label htmlFor="discussion_notes" className="text-sm font-medium text-foreground">Discussion Notes</Label>
             <Textarea
               id="discussion_notes"
               {...register("discussion_notes")}
               placeholder="Key discussion points and notes"
               rows={3}
+              className="border-border/50 focus:border-primary resize-none"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="outcome">Outcome</Label>
+              <Label htmlFor="outcome" className="text-sm font-medium text-foreground">Outcome</Label>
               <Select value={outcome} onValueChange={(value) => setValue('outcome', value as any)}>
-                <SelectTrigger>
+                <SelectTrigger className="border-border/50 focus:border-primary">
                   <SelectValue placeholder="Select outcome" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="interested">Interested</SelectItem>
-                  <SelectItem value="follow_up">Follow Up</SelectItem>
-                  <SelectItem value="not_interested">Not Interested</SelectItem>
+                  <SelectItem value="interested">✅ Interested</SelectItem>
+                  <SelectItem value="follow_up">📞 Follow Up</SelectItem>
+                  <SelectItem value="not_interested">❌ Not Interested</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="next_follow_up_date">Next Follow-up Date</Label>
+              <Label htmlFor="next_follow_up_date" className="text-sm font-medium text-foreground">Next Follow-up Date</Label>
               <Input
                 id="next_follow_up_date"
                 type="date"
                 {...register("next_follow_up_date")}
+                className="border-border/50 focus:border-primary"
               />
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-border/20">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              className="order-2 sm:order-1"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? (meeting ? "Updating..." : "Adding...") : (meeting ? "Update Meeting" : "Add Meeting")}
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              className="order-1 sm:order-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+            >
+              {isLoading ? (meeting ? "Updating..." : "Scheduling...") : (meeting ? "Update Meeting" : "Schedule Meeting")}
             </Button>
           </div>
         </form>
