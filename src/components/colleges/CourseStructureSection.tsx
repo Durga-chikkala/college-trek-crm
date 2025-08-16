@@ -1,26 +1,25 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCourseTopics, useCreateCourseTopic, useUpdateCourseTopic, useDeleteCourseTopic } from '@/hooks/useCourseTopics';
+import { TopicCard } from './TopicCard';
+import { useToast } from '@/hooks/use-toast';
 import { 
   BookOpen, 
   Plus, 
-  Edit, 
-  Trash2, 
-  FileText, 
-  Code, 
-  GripVertical,
-  Save,
-  X
+  Upload,
+  FileText,
+  Sparkles,
+  Zap,
+  Target,
+  TrendingUp
 } from 'lucide-react';
 
 interface CourseStructureSectionProps {
@@ -33,9 +32,11 @@ export const CourseStructureSection = ({ courseId, courseName }: CourseStructure
   const createTopicMutation = useCreateCourseTopic();
   const updateTopicMutation = useUpdateCourseTopic();
   const deleteTopicMutation = useDeleteCourseTopic();
+  const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('manual');
   const [newTopic, setNewTopic] = useState({
     title: '',
     description: '',
@@ -43,21 +44,31 @@ export const CourseStructureSection = ({ courseId, courseName }: CourseStructure
     readme_content: ''
   });
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleCreateTopic = async () => {
-    if (!newTopic.title.trim()) return;
+    if (!newTopic.title.trim()) {
+      toast({
+        title: "Error",
+        description: "Topic title is required",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const topicData = {
       course_id: courseId,
       title: newTopic.title,
       description: newTopic.description || null,
-      is_manual: newTopic.is_manual,
-      readme_content: newTopic.is_manual ? null : newTopic.readme_content,
+      is_manual: activeTab === 'manual',
+      readme_content: activeTab === 'manual' ? null : newTopic.readme_content,
       order_index: topics.length
     };
 
     await createTopicMutation.mutateAsync(topicData);
     setNewTopic({ title: '', description: '', is_manual: true, readme_content: '' });
     setIsDialogOpen(false);
+    setActiveTab('manual');
   };
 
   const handleUpdateTopic = async (topicId: string, updates: any) => {
@@ -66,8 +77,35 @@ export const CourseStructureSection = ({ courseId, courseName }: CourseStructure
   };
 
   const handleDeleteTopic = async (topicId: string) => {
-    if (confirm('Are you sure you want to delete this topic?')) {
+    if (confirm('Are you sure you want to delete this topic? This action cannot be undone.')) {
       await deleteTopicMutation.mutateAsync(topicId);
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.name.endsWith('.md')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        const lines = content.split('\n');
+        const title = lines[0]?.replace(/^#\s*/, '') || file.name.replace('.md', '');
+        
+        setNewTopic({
+          title,
+          description: `Imported from ${file.name}`,
+          is_manual: false,
+          readme_content: content
+        });
+        setActiveTab('readme');
+      };
+      reader.readAsText(file);
+    } else {
+      toast({
+        title: "Error",
+        description: "Please upload a valid .md file",
+        variant: "destructive"
+      });
     }
   };
 
@@ -81,247 +119,257 @@ export const CourseStructureSection = ({ courseId, courseName }: CourseStructure
 
   return (
     <div className="space-y-6">
+      {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h3 className="text-xl font-semibold text-foreground">Course Structure</h3>
-          <p className="text-muted-foreground">{courseName} - Manage topics and curriculum</p>
+        <div className="space-y-1">
+          <h3 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <BookOpen className="h-6 w-6 text-primary" />
+            Course Structure
+          </h3>
+          <p className="text-muted-foreground">
+            <span className="font-medium text-primary">{courseName}</span> - Build your curriculum with topics and content
+          </p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Topic
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add New Topic</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Topic Title *</Label>
-                <Input
-                  value={newTopic.title}
-                  onChange={(e) => setNewTopic({ ...newTopic, title: e.target.value })}
-                  placeholder="Enter topic title"
-                />
-              </div>
+        <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            className="border-primary/20 hover:bg-primary/5"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Import .md File
+          </Button>
+
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Topic
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Create New Topic
+                </DialogTitle>
+              </DialogHeader>
               
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={newTopic.description}
-                  onChange={(e) => setNewTopic({ ...newTopic, description: e.target.value })}
-                  placeholder="Brief description of the topic"
-                  rows={3}
-                />
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="manual" className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Quick Manual
+                  </TabsTrigger>
+                  <TabsTrigger value="readme" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Markdown Content
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="manual" className="space-y-4 mt-6">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        Topic Title *
+                      </Label>
+                      <Input
+                        value={newTopic.title}
+                        onChange={(e) => setNewTopic({ ...newTopic, title: e.target.value })}
+                        placeholder="e.g., Introduction to React Hooks"
+                        className="text-base"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Description</Label>
+                      <Textarea
+                        value={newTopic.description}
+                        onChange={(e) => setNewTopic({ ...newTopic, description: e.target.value })}
+                        placeholder="Brief overview of what this topic covers..."
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="readme" className="space-y-4 mt-6">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        Topic Title *
+                      </Label>
+                      <Input
+                        value={newTopic.title}
+                        onChange={(e) => setNewTopic({ ...newTopic, title: e.target.value })}
+                        placeholder="e.g., Advanced React Patterns"
+                        className="text-base"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Description</Label>
+                      <Textarea
+                        value={newTopic.description}
+                        onChange={(e) => setNewTopic({ ...newTopic, description: e.target.value })}
+                        placeholder="Brief overview of this markdown-based topic..."
+                        rows={2}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Markdown Content
+                      </Label>
+                      <Textarea
+                        value={newTopic.readme_content}
+                        onChange={(e) => setNewTopic({ ...newTopic, readme_content: e.target.value })}
+                        placeholder="# Topic Title&#10;&#10;## Learning Objectives&#10;- Master advanced React patterns&#10;- Understand compound components&#10;- Implement render props&#10;&#10;## Overview&#10;In this topic, we'll explore advanced React patterns that will help you build more flexible and reusable components.&#10;&#10;## Content&#10;### 1. Compound Components&#10;Compound components are..."
+                        rows={12}
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Tip: Use markdown syntax for formatting. You can upload .md files using the import button above.
+                      </p>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <div className="flex justify-end gap-3 pt-6 border-t">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreateTopic} 
+                  disabled={createTopicMutation.isPending}
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                >
+                  {createTopicMutation.isPending ? (
+                    <>Creating...</>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Create Topic
+                    </>
+                  )}
+                </Button>
               </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={newTopic.is_manual}
-                  onCheckedChange={(checked) => setNewTopic({ ...newTopic, is_manual: checked })}
-                />
-                <Label>Manual Topic (uncheck for README-based)</Label>
-              </div>
-
-              {!newTopic.is_manual && (
-                <div className="space-y-2">
-                  <Label>README Content</Label>
-                  <Textarea
-                    value={newTopic.readme_content}
-                    onChange={(e) => setNewTopic({ ...newTopic, readme_content: e.target.value })}
-                    placeholder="Markdown content for the topic"
-                    rows={8}
-                    className="font-mono text-sm"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateTopic} disabled={createTopicMutation.isPending}>
-                {createTopicMutation.isPending ? 'Creating...' : 'Create Topic'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      {/* Stats Cards */}
+      {topics.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500 rounded-lg">
+                  <BookOpen className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Topics</p>
+                  <p className="text-2xl font-bold text-foreground">{topics.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500 rounded-lg">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Manual Topics</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {topics.filter(t => t.is_manual).length}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-md bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">README Topics</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {topics.filter(t => !t.is_manual).length}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Topics List */}
       <div className="space-y-4">
         {topics.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="p-8 text-center">
-              <BookOpen className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground mb-2">No topics yet</h3>
-              <p className="text-muted-foreground">Start building your course structure by adding topics</p>
+          <Card className="border-dashed border-2 border-muted-foreground/20">
+            <CardContent className="p-12 text-center">
+              <div className="mx-auto w-24 h-24 bg-muted/30 rounded-full flex items-center justify-center mb-6">
+                <BookOpen className="h-12 w-12 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-xl font-semibold text-muted-foreground mb-3">No topics yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Start building your course structure by adding topics. You can create manual topics or import markdown files.
+              </p>
+              <div className="flex justify-center gap-3">
+                <Button 
+                  onClick={() => setIsDialogOpen(true)}
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add First Topic
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-primary/20 hover:bg-primary/5"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import .md File
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
-          topics.map((topic, index) => (
-            <TopicCard
-              key={topic.id}
-              topic={topic}
-              index={index}
-              onUpdate={handleUpdateTopic}
-              onDelete={handleDeleteTopic}
-              isEditing={editingTopic === topic.id}
-              setEditing={setEditingTopic}
-            />
-          ))
+          <div className="space-y-4">
+            {topics.map((topic, index) => (
+              <TopicCard
+                key={topic.id}
+                topic={topic}
+                index={index}
+                onUpdate={handleUpdateTopic}
+                onDelete={handleDeleteTopic}
+                isEditing={editingTopic === topic.id}
+                setEditing={setEditingTopic}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
-  );
-};
-
-interface TopicCardProps {
-  topic: any;
-  index: number;
-  onUpdate: (id: string, updates: any) => void;
-  onDelete: (id: string) => void;
-  isEditing: boolean;
-  setEditing: (id: string | null) => void;
-}
-
-const TopicCard = ({ topic, index, onUpdate, onDelete, isEditing, setEditing }: TopicCardProps) => {
-  const [editData, setEditData] = useState({
-    title: topic.title,
-    description: topic.description || '',
-    is_manual: topic.is_manual,
-    readme_content: topic.readme_content || ''
-  });
-
-  const handleSave = () => {
-    onUpdate(topic.id, editData);
-  };
-
-  const handleCancel = () => {
-    setEditData({
-      title: topic.title,
-      description: topic.description || '',
-      is_manual: topic.is_manual,
-      readme_content: topic.readme_content || ''
-    });
-    setEditing(null);
-  };
-
-  return (
-    <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-200">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <GripVertical className="h-4 w-4" />
-            <span className="text-sm font-mono">{String(index + 1).padStart(2, '0')}</span>
-          </div>
-          
-          <div className="flex-1">
-            {isEditing ? (
-              <div className="space-y-4">
-                <Input
-                  value={editData.title}
-                  onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                  className="font-medium"
-                />
-                
-                <Textarea
-                  value={editData.description}
-                  onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                  placeholder="Topic description"
-                  rows={2}
-                />
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={editData.is_manual}
-                    onCheckedChange={(checked) => setEditData({ ...editData, is_manual: checked })}
-                  />
-                  <Label>Manual Topic</Label>
-                </div>
-
-                {!editData.is_manual && (
-                  <Textarea
-                    value={editData.readme_content}
-                    onChange={(e) => setEditData({ ...editData, readme_content: e.target.value })}
-                    placeholder="README content (Markdown)"
-                    rows={6}
-                    className="font-mono text-sm"
-                  />
-                )}
-
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleSave}>
-                    <Save className="h-3 w-3 mr-1" />
-                    Save
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleCancel}>
-                    <X className="h-3 w-3 mr-1" />
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <h4 className="font-medium text-foreground">{topic.title}</h4>
-                  <Badge variant="outline" className="text-xs">
-                    {topic.is_manual ? (
-                      <>
-                        <FileText className="h-3 w-3 mr-1" />
-                        Manual
-                      </>
-                    ) : (
-                      <>
-                        <Code className="h-3 w-3 mr-1" />
-                        README
-                      </>
-                    )}
-                  </Badge>
-                </div>
-                
-                {topic.description && (
-                  <p className="text-sm text-muted-foreground mb-3">{topic.description}</p>
-                )}
-
-                {!topic.is_manual && topic.readme_content && (
-                  <div className="bg-muted/50 rounded-md p-3 mt-3">
-                    <p className="text-xs text-muted-foreground mb-2">README Preview:</p>
-                    <pre className="text-xs text-foreground whitespace-pre-wrap">
-                      {topic.readme_content.substring(0, 200)}
-                      {topic.readme_content.length > 200 ? '...' : ''}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {!isEditing && (
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setEditing(topic.id)}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={() => onDelete(topic.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   );
 };
