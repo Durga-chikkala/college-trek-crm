@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CollegeForm } from '@/components/colleges/CollegeForm';
-import { PricingSection } from '@/components/colleges/PricingSection';
-import { AdvancedPricingManagement } from '@/components/colleges/AdvancedPricingManagement';
+import { SimplifiedPricingDashboard } from '@/components/colleges/SimplifiedPricingDashboard';
+import { SimplifiedCourseManagement } from '@/components/colleges/SimplifiedCourseManagement';
 import { 
   Building2, 
   MapPin, 
@@ -24,7 +24,7 @@ import {
   Users,
   GraduationCap,
   DollarSign,
-  TrendingUp
+  BookOpen
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,7 +37,7 @@ const Colleges = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCollege, setEditingCollege] = useState<any>(null);
   const [selectedCollegeId, setSelectedCollegeId] = useState<string | null>(null);
-  const [pricingView, setPricingView] = useState<'basic' | 'advanced'>('basic');
+  const [managementView, setManagementView] = useState<'pricing' | 'courses'>('pricing');
   
   const { data: colleges = [], isLoading } = useColleges();
   const deleteCollege = useDeleteCollege();
@@ -119,42 +119,10 @@ const Colleges = () => {
           </Dialog>
         </div>
 
-        {/* Search and Filter */}
-        <Card className="shadow-lg border-0 bg-gradient-to-r from-card to-card/95">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search colleges by name, city, or state..."
-                  className="pl-10 border-border/50 focus:border-primary"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[180px] border-border/50 focus:border-primary">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="prospect">Prospect</SelectItem>
-                    <SelectItem value="negotiation">Negotiation</SelectItem>
-                    <SelectItem value="closed_won">Closed Won</SelectItem>
-                    <SelectItem value="closed_lost">Closed Lost</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Main Content */}
         {selectedCollegeId ? (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <Button
                   variant="outline"
@@ -164,253 +132,294 @@ const Colleges = () => {
                   ← Back to Colleges
                 </Button>
                 <h2 className="text-xl font-semibold text-foreground">
-                  {colleges.find(c => c.id === selectedCollegeId)?.name} - Pricing Management
+                  {colleges.find(c => c.id === selectedCollegeId)?.name} - Management
                 </h2>
               </div>
               
               <div className="flex items-center gap-2">
                 <Button
-                  variant={pricingView === 'basic' ? 'default' : 'outline'}
-                  onClick={() => setPricingView('basic')}
+                  variant={managementView === 'pricing' ? 'default' : 'outline'}
+                  onClick={() => setManagementView('pricing')}
                   size="sm"
+                  className="flex items-center gap-2"
                 >
-                  Basic
+                  <DollarSign className="h-4 w-4" />
+                  Pricing
                 </Button>
                 <Button
-                  variant={pricingView === 'advanced' ? 'default' : 'outline'}
-                  onClick={() => setPricingView('advanced')}
+                  variant={managementView === 'courses' ? 'default' : 'outline'}
+                  onClick={() => setManagementView('courses')}
                   size="sm"
+                  className="flex items-center gap-2"
                 >
-                  Advanced
+                  <BookOpen className="h-4 w-4" />
+                  Courses
                 </Button>
               </div>
             </div>
             
-            {pricingView === 'basic' ? (
-              <PricingSection collegeId={selectedCollegeId} />
+            {managementView === 'pricing' ? (
+              <SimplifiedPricingDashboard 
+                collegeId={selectedCollegeId} 
+                collegeName={colleges.find(c => c.id === selectedCollegeId)?.name || ''} 
+              />
             ) : (
-              <AdvancedPricingManagement 
+              <SimplifiedCourseManagement 
                 collegeId={selectedCollegeId} 
                 collegeName={colleges.find(c => c.id === selectedCollegeId)?.name || ''} 
               />
             )}
           </div>
         ) : (
-          <Tabs defaultValue="grid" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="grid" className="flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Grid View
-              </TabsTrigger>
-              <TabsTrigger value="list" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                List View
-              </TabsTrigger>
-            </TabsList>
+          <>
+            {/* Search and Filter */}
+            <Card className="shadow-lg border-0 bg-gradient-to-r from-card to-card/95">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search colleges by name, city, or state..."
+                      className="pl-10 border-border/50 focus:border-primary"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full sm:w-[180px] border-border/50 focus:border-primary">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="prospect">Prospect</SelectItem>
+                        <SelectItem value="negotiation">Negotiation</SelectItem>
+                        <SelectItem value="closed_won">Closed Won</SelectItem>
+                        <SelectItem value="closed_lost">Closed Lost</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            <TabsContent value="grid" className="space-y-6">
-              {/* College Grid */}
-              <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                {filteredColleges.map((college) => (
-                  <Card key={college.id} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-card to-card/95 overflow-hidden">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                            <div className="flex items-center gap-2">
-                              <Building2 className="h-5 w-5 text-primary flex-shrink-0" />
-                              {college.name}
-                            </div>
-                          </CardTitle>
-                          <Badge className={`${getStatusColor(college.status)} mt-2`}>
-                            {college.status.replace('_', ' ').toUpperCase()}
-                          </Badge>
+            <Tabs defaultValue="grid" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 max-w-md">
+                <TabsTrigger value="grid" className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Grid View
+                </TabsTrigger>
+                <TabsTrigger value="list" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  List View
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="grid" className="space-y-6">
+                {/* College Grid */}
+                <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+                  {filteredColleges.map((college) => (
+                    <Card key={college.id} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-card to-card/95 overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                              <div className="flex items-center gap-2">
+                                <Building2 className="h-5 w-5 text-primary flex-shrink-0" />
+                                {college.name}
+                              </div>
+                            </CardTitle>
+                            <Badge className={`${getStatusColor(college.status)} mt-2`}>
+                              {college.status.replace('_', ' ').toUpperCase()}
+                            </Badge>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="shadow-xl border-0">
+                              <DropdownMenuItem onClick={() => setSelectedCollegeId(college.id)} className="gap-2">
+                                <DollarSign className="h-4 w-4" />
+                                Manage
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(college)} className="gap-2">
+                                <Edit className="h-4 w-4" />
+                                Edit College
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDelete(college.id)}
+                                className="text-destructive gap-2"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete College
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="shadow-xl border-0">
-                            <DropdownMenuItem onClick={() => setSelectedCollegeId(college.id)} className="gap-2">
-                              <DollarSign className="h-4 w-4" />
-                              Manage Pricing
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEdit(college)} className="gap-2">
-                              <Edit className="h-4 w-4" />
-                              Edit College
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDelete(college.id)}
-                              className="text-destructive gap-2"
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-3">
+                        {college.city && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="h-4 w-4 text-orange-500" />
+                            <span className="truncate">{college.city}{college.state && `, ${college.state}`}</span>
+                          </div>
+                        )}
+                        {college.phone && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Phone className="h-4 w-4 text-green-500" />
+                            <span className="truncate">{college.phone}</span>
+                          </div>
+                        )}
+                        {college.email && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Mail className="h-4 w-4 text-blue-500" />
+                            <span className="truncate">{college.email}</span>
+                          </div>
+                        )}
+                        {college.website && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Globe className="h-4 w-4 text-purple-500" />
+                            <a 
+                              href={college.website} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="truncate hover:text-primary transition-colors"
                             >
-                              <Trash2 className="h-4 w-4" />
-                              Delete College
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0 space-y-3">
-                      {college.city && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="h-4 w-4 text-orange-500" />
-                          <span className="truncate">{college.city}{college.state && `, ${college.state}`}</span>
-                        </div>
-                      )}
-                      {college.phone && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Phone className="h-4 w-4 text-green-500" />
-                          <span className="truncate">{college.phone}</span>
-                        </div>
-                      )}
-                      {college.email && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Mail className="h-4 w-4 text-blue-500" />
-                          <span className="truncate">{college.email}</span>
-                        </div>
-                      )}
-                      {college.website && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Globe className="h-4 w-4 text-purple-500" />
-                          <a 
-                            href={college.website} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="truncate hover:text-primary transition-colors"
+                              Visit Website
+                            </a>
+                          </div>
+                        )}
+                        
+                        <div className="flex gap-2 pt-2">
+                          <Button 
+                            size="sm" 
+                            className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                            onClick={() => setSelectedCollegeId(college.id)}
                           >
-                            Visit Website
-                          </a>
+                            <GraduationCap className="h-3 w-3 mr-1" />
+                            Manage
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="border-primary/20 hover:bg-primary/5"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
                         </div>
-                      )}
-                      
-                      <div className="flex gap-2 pt-2">
-                        <Button 
-                          size="sm" 
-                          className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                          onClick={() => setSelectedCollegeId(college.id)}
-                        >
-                          <DollarSign className="h-3 w-3 mr-1" />
-                          Pricing
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="border-primary/20 hover:bg-primary/5"
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="list" className="space-y-4">
+                {/* College List */}
+                {filteredColleges.map((college) => (
+                  <Card key={college.id} className="group hover:shadow-lg transition-all duration-200 border-0 shadow-md">
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
+                            <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                              {college.name}
+                            </h3>
+                            <Badge className={getStatusColor(college.status)}>
+                              {college.status.replace('_', ' ').toUpperCase()}
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm text-muted-foreground">
+                            {college.city && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-orange-500" />
+                                {college.city}{college.state && `, ${college.state}`}
+                              </div>
+                            )}
+                            {college.phone && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-4 w-4 text-green-500" />
+                                {college.phone}
+                              </div>
+                            )}
+                            {college.email && (
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-blue-500" />
+                                {college.email}
+                              </div>
+                            )}
+                            {college.website && (
+                              <div className="flex items-center gap-2">
+                                <Globe className="h-4 w-4 text-purple-500" />
+                                <a 
+                                  href={college.website} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="hover:text-primary transition-colors"
+                                >
+                                  Website
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                            onClick={() => setSelectedCollegeId(college.id)}
+                          >
+                            <DollarSign className="h-4 w-4 mr-2" />
+                            <span className="hidden sm:inline">Manage Pricing</span>
+                            <span className="sm:hidden">Pricing</span>
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="shadow-xl border-0">
+                              <DropdownMenuItem onClick={() => handleEdit(college)} className="gap-2">
+                                <Edit className="h-4 w-4" />
+                                Edit College
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDelete(college.id)}
+                                className="text-destructive gap-2"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete College
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
-              </div>
-            </TabsContent>
+              </TabsContent>
+            </Tabs>
 
-            <TabsContent value="list" className="space-y-4">
-              {/* College List */}
-              {filteredColleges.map((college) => (
-                <Card key={college.id} className="group hover:shadow-lg transition-all duration-200 border-0 shadow-md">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
-                          <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {college.name}
-                          </h3>
-                          <Badge className={getStatusColor(college.status)}>
-                            {college.status.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm text-muted-foreground">
-                          {college.city && (
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-orange-500" />
-                              {college.city}{college.state && `, ${college.state}`}
-                            </div>
-                          )}
-                          {college.phone && (
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4 text-green-500" />
-                              {college.phone}
-                            </div>
-                          )}
-                          {college.email && (
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4 text-blue-500" />
-                              {college.email}
-                            </div>
-                          )}
-                          {college.website && (
-                            <div className="flex items-center gap-2">
-                              <Globe className="h-4 w-4 text-purple-500" />
-                              <a 
-                                href={college.website} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="hover:text-primary transition-colors"
-                              >
-                                Website
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                          onClick={() => setSelectedCollegeId(college.id)}
-                        >
-                          <DollarSign className="h-4 w-4 mr-2" />
-                          <span className="hidden sm:inline">Manage Pricing</span>
-                          <span className="sm:hidden">Pricing</span>
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="shadow-xl border-0">
-                            <DropdownMenuItem onClick={() => handleEdit(college)} className="gap-2">
-                              <Edit className="h-4 w-4" />
-                              Edit College
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDelete(college.id)}
-                              className="text-destructive gap-2"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Delete College
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </TabsContent>
-          </Tabs>
-        )}
-
-        {filteredColleges.length === 0 && !selectedCollegeId && (
-          <Card className="shadow-lg border-0">
-            <CardContent className="p-12 text-center">
-              <Building2 className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                {searchTerm || statusFilter !== 'all' ? 'No colleges found' : 'No colleges yet'}
-              </h3>
-              <p className="text-muted-foreground">
-                {searchTerm || statusFilter !== 'all' 
-                  ? 'Try adjusting your search or filter criteria'
-                  : 'Get started by adding your first college'
-                }
-              </p>
-            </CardContent>
-          </Card>
+            {filteredColleges.length === 0 && (
+              <Card className="shadow-lg border-0">
+                <CardContent className="p-12 text-center">
+                  <Building2 className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+                    {searchTerm || statusFilter !== 'all' ? 'No colleges found' : 'No colleges yet'}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {searchTerm || statusFilter !== 'all' 
+                      ? 'Try adjusting your search or filter criteria'
+                      : 'Get started by adding your first college'
+                    }
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
       </div>
     </AppLayout>
