@@ -28,10 +28,9 @@ import { CollegeForm } from './CollegeForm';
 
 const statusColors = {
   prospect: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  lead: 'bg-blue-100 text-blue-800 border-blue-200',
-  opportunity: 'bg-purple-100 text-purple-800 border-purple-200',
-  customer: 'bg-green-100 text-green-800 border-green-200',
-  inactive: 'bg-gray-100 text-gray-800 border-gray-200'
+  negotiation: 'bg-blue-100 text-blue-800 border-blue-200',
+  closed_won: 'bg-green-100 text-green-800 border-green-200',
+  lost: 'bg-red-100 text-red-800 border-red-200'
 };
 
 export const CollegeManagement = () => {
@@ -52,9 +51,9 @@ export const CollegeManagement = () => {
   const stats = {
     total: colleges.length,
     prospects: colleges.filter(c => c.status === 'prospect').length,
-    leads: colleges.filter(c => c.status === 'lead').length,
-    customers: colleges.filter(c => c.status === 'customer').length,
-    opportunities: colleges.filter(c => c.status === 'opportunity').length
+    negotiation: colleges.filter(c => c.status === 'negotiation').length,
+    closedWon: colleges.filter(c => c.status === 'closed_won').length,
+    lost: colleges.filter(c => c.status === 'lost').length
   };
 
   if (isLoading) {
@@ -116,22 +115,8 @@ export const CollegeManagement = () => {
                 <TrendingUp className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Leads</p>
-                <p className="text-2xl font-bold">{stats.leads}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-md bg-gradient-to-br from-purple-50 to-purple-100">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500 rounded-lg">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Opportunities</p>
-                <p className="text-2xl font-bold">{stats.opportunities}</p>
+                <p className="text-sm text-muted-foreground">In Negotiation</p>
+                <p className="text-2xl font-bold">{stats.negotiation}</p>
               </div>
             </div>
           </CardContent>
@@ -144,8 +129,22 @@ export const CollegeManagement = () => {
                 <Building2 className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Customers</p>
-                <p className="text-2xl font-bold">{stats.customers}</p>
+                <p className="text-sm text-muted-foreground">Closed Won</p>
+                <p className="text-2xl font-bold">{stats.closedWon}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-red-100">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500 rounded-lg">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Lost</p>
+                <p className="text-2xl font-bold">{stats.lost}</p>
               </div>
             </div>
           </CardContent>
@@ -179,18 +178,18 @@ export const CollegeManagement = () => {
             Prospects
           </Button>
           <Button
-            variant={statusFilter === 'lead' ? 'default' : 'outline'}
-            onClick={() => setStatusFilter('lead')}
+            variant={statusFilter === 'negotiation' ? 'default' : 'outline'}
+            onClick={() => setStatusFilter('negotiation')}
             size="sm"
           >
-            Leads
+            Negotiation
           </Button>
           <Button
-            variant={statusFilter === 'customer' ? 'default' : 'outline'}
-            onClick={() => setStatusFilter('customer')}
+            variant={statusFilter === 'closed_won' ? 'default' : 'outline'}
+            onClick={() => setStatusFilter('closed_won')}
             size="sm"
           >
-            Customers
+            Closed Won
           </Button>
         </div>
       </div>

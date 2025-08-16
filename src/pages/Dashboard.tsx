@@ -29,23 +29,23 @@ const Dashboard = () => {
       bgColor: 'from-blue-50 to-blue-100'
     },
     {
-      title: 'Active Deals',
-      value: stats?.activeDeals || 0,
+      title: 'Closed Won',
+      value: stats?.closedWonColleges || 0,
       icon: TrendingUp,
       color: 'from-green-500 to-green-600',
       bgColor: 'from-green-50 to-green-100'
     },
     {
-      title: 'This Month Meetings',
-      value: stats?.monthlyMeetings || 0,
+      title: 'Upcoming Meetings',
+      value: stats?.upcomingMeetingsCount || 0,
       icon: Calendar,
       color: 'from-purple-500 to-purple-600',
       bgColor: 'from-purple-50 to-purple-100'
     },
     {
-      title: 'Total Revenue',
-      value: `$${(stats?.totalRevenue || 0).toLocaleString()}`,
-      icon: DollarSign,
+      title: 'Total Contacts',
+      value: stats?.totalContacts || 0,
+      icon: Users,
       color: 'from-orange-500 to-orange-600',
       bgColor: 'from-orange-50 to-orange-100'
     }

@@ -25,11 +25,16 @@ export const useAuditLogs = () => {
       const { data, error } = await supabase
         .from('audit_logs')
         .select(`
-          *,
-          profiles!audit_logs_changed_by_fkey (
-            first_name,
-            last_name
-          )
+          id,
+          table_name,
+          record_id,
+          action,
+          old_values,
+          new_values,
+          changed_at,
+          ip_address,
+          user_agent,
+          changed_by
         `)
         .order('changed_at', { ascending: false })
         .limit(100);
@@ -38,6 +43,20 @@ export const useAuditLogs = () => {
         console.error('Error fetching audit logs:', error);
         throw error;
       }
+
+      // Get unique user IDs from audit logs
+      const userIds = [...new Set(data?.map(log => log.changed_by).filter(Boolean) || [])];
+      
+      // Fetch profiles for these users separately
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name')
+        .in('user_id', userIds);
+
+      // Create a map of user profiles
+      const profileMap = new Map(
+        profiles?.map(profile => [profile.user_id, profile]) || []
+      );
 
       // Transform the data to match our interface
       const transformedData: AuditLog[] = (data || []).map(log => ({
@@ -50,10 +69,7 @@ export const useAuditLogs = () => {
         changed_at: log.changed_at || '',
         ip_address: log.ip_address as string | null,
         user_agent: log.user_agent as string | null,
-        user_profile: log.profiles ? {
-          first_name: log.profiles.first_name,
-          last_name: log.profiles.last_name
-        } : null
+        user_profile: log.changed_by ? profileMap.get(log.changed_by) || null : null
       }));
 
       return transformedData;
