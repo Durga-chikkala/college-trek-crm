@@ -53,27 +53,27 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6 p-6">
+      <div className="space-y-4 lg:space-y-6 p-4 lg:p-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back! Here's what's happening with your colleges.</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-sm lg:text-base text-muted-foreground">Welcome back! Here's what's happening with your colleges.</p>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
           {quickStats.map((stat, index) => (
             <Card key={index} className={`border-0 shadow-lg bg-gradient-to-br ${stat.bgColor}`}>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-lg bg-gradient-to-br ${stat.color}`}>
-                    <stat.icon className="h-6 w-6 text-white" />
+              <CardContent className="p-4 lg:p-6">
+                <div className="flex items-center gap-3 lg:gap-4">
+                  <div className={`p-2 lg:p-3 rounded-lg bg-gradient-to-br ${stat.color}`}>
+                    <stat.icon className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                    <p className="text-xs lg:text-sm font-medium text-muted-foreground">{stat.title}</p>
+                    <p className="text-lg lg:text-2xl font-bold text-foreground">{stat.value}</p>
                   </div>
                 </div>
               </CardContent>
@@ -82,56 +82,56 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                <Building2 className="h-4 w-4 lg:h-5 lg:w-5" />
                 College Management
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
+            <CardContent className="pt-0">
+              <p className="text-xs lg:text-sm text-muted-foreground mb-4">
                 Manage your college relationships, track progress, and view details.
               </p>
-              <Button className="w-full">
-                <Building2 className="h-4 w-4 mr-2" />
+              <Button className="w-full text-xs lg:text-sm">
+                <Building2 className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
                 View Colleges
               </Button>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                <DollarSign className="h-4 w-4 lg:h-5 lg:w-5" />
                 Pricing Models
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
+            <CardContent className="pt-0">
+              <p className="text-xs lg:text-sm text-muted-foreground mb-4">
                 Create and manage pricing models for your courses and services.
               </p>
-              <Button className="w-full" variant="outline">
-                <DollarSign className="h-4 w-4 mr-2" />
+              <Button className="w-full text-xs lg:text-sm" variant="outline">
+                <DollarSign className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
                 Manage Pricing
               </Button>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                <BookOpen className="h-4 w-4 lg:h-5 lg:w-5" />
                 Course Management
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
+            <CardContent className="pt-0">
+              <p className="text-xs lg:text-sm text-muted-foreground mb-4">
                 Create, organize, and manage courses for your college partners.
               </p>
-              <Button className="w-full" variant="outline">
-                <BookOpen className="h-4 w-4 mr-2" />
+              <Button className="w-full text-xs lg:text-sm" variant="outline">
+                <BookOpen className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
                 Manage Courses
               </Button>
             </CardContent>
@@ -141,15 +141,15 @@ const Dashboard = () => {
         {/* Recent Activity */}
         <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+              <Activity className="h-4 w-4 lg:h-5 lg:w-5" />
               Recent Activity
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No recent activity to display</p>
+            <div className="text-center py-6 lg:py-8 text-muted-foreground">
+              <Activity className="h-10 w-10 lg:h-12 lg:w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-sm lg:text-base">No recent activity to display</p>
             </div>
           </CardContent>
         </Card>

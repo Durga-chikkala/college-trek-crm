@@ -1,371 +1,290 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useColleges } from '@/hooks/useColleges';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Building2, 
-  Phone, 
-  Mail, 
   MapPin, 
   Users, 
   Calendar,
-  ExternalLink,
   Search,
   Filter,
   Plus,
-  Eye,
-  Edit,
+  Phone,
+  Mail,
+  Globe,
   TrendingUp,
-  BookOpen,
-  DollarSign
+  DollarSign,
+  BookOpen
 } from 'lucide-react';
 import { CollegeForm } from './CollegeForm';
 
-const statusColors = {
-  prospect: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  negotiation: 'bg-blue-100 text-blue-800 border-blue-200',
-  closed_won: 'bg-green-100 text-green-800 border-green-200',
-  lost: 'bg-red-100 text-red-800 border-red-200'
+type College = {
+  id: string;
+  name: string;
+  location: string;
+  contact_person: string;
+  email: string;
+  phone: string;
+  website: string;
+  status: 'prospect' | 'negotiation' | 'closed_won' | 'lost';
+  created_at: string;
+  updated_at: string;
 };
 
-export const CollegeManagement = () => {
+const statusConfig = {
+  prospect: { label: 'Prospect', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+  negotiation: { label: 'Negotiation', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  closed_won: { label: 'Closed Won', color: 'bg-green-100 text-green-800 border-green-200' },
+  lost: { label: 'Lost', color: 'bg-red-100 text-red-800 border-red-200' }
+};
+
+export function CollegeManagement() {
   const { data: colleges = [], isLoading } = useColleges();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedCollege, setSelectedCollege] = useState<any>(null);
   const [showCollegeForm, setShowCollegeForm] = useState(false);
 
-  const filteredColleges = colleges.filter(college => {
-    const matchesSearch = college.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         college.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         college.state?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || college.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Filter colleges based on search and status
+  const filteredColleges = useMemo(() => {
+    return colleges.filter((college: College) => {
+      const matchesSearch = college.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           college.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           college.contact_person.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || college.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [colleges, searchTerm, statusFilter]);
 
-  const stats = {
-    total: colleges.length,
-    prospects: colleges.filter(c => c.status === 'prospect').length,
-    negotiation: colleges.filter(c => c.status === 'negotiation').length,
-    closedWon: colleges.filter(c => c.status === 'closed_won').length,
-    lost: colleges.filter(c => c.status === 'lost').length
-  };
+  // Calculate stats
+  const stats = useMemo(() => {
+    const total = colleges.length;
+    const prospects = colleges.filter((c: College) => c.status === 'prospect').length;
+    const negotiations = colleges.filter((c: College) => c.status === 'negotiation').length;
+    const closedWon = colleges.filter((c: College) => c.status === 'closed_won').length;
+    
+    return { total, prospects, negotiations, closedWon };
+  }, [colleges]);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="p-4 lg:p-6 space-y-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">College Management</h1>
-          <p className="text-muted-foreground">Manage your college relationships and track progress</p>
-        </div>
-        <Button onClick={() => setShowCollegeForm(true)} className="bg-primary hover:bg-primary/90">
-          <Plus className="h-4 w-4 mr-2" />
-          Add College
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500 rounded-lg">
-                <Building2 className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Colleges</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-md bg-gradient-to-br from-yellow-50 to-yellow-100">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-500 rounded-lg">
-                <Eye className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Prospects</p>
-                <p className="text-2xl font-bold">{stats.prospects}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">In Negotiation</p>
-                <p className="text-2xl font-bold">{stats.negotiation}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500 rounded-lg">
-                <Building2 className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Closed Won</p>
-                <p className="text-2xl font-bold">{stats.closedWon}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-red-100">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500 rounded-lg">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Lost</p>
-                <p className="text-2xl font-bold">{stats.lost}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search colleges..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={statusFilter === 'all' ? 'default' : 'outline'}
-            onClick={() => setStatusFilter('all')}
-            size="sm"
+    <>
+      <div className="p-4 lg:p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">College Management</h1>
+            <p className="text-sm lg:text-base text-muted-foreground">Manage your college partnerships and relationships</p>
+          </div>
+          <Button 
+            onClick={() => setShowCollegeForm(true)}
+            className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
           >
-            All
-          </Button>
-          <Button
-            variant={statusFilter === 'prospect' ? 'default' : 'outline'}
-            onClick={() => setStatusFilter('prospect')}
-            size="sm"
-          >
-            Prospects
-          </Button>
-          <Button
-            variant={statusFilter === 'negotiation' ? 'default' : 'outline'}
-            onClick={() => setStatusFilter('negotiation')}
-            size="sm"
-          >
-            Negotiation
-          </Button>
-          <Button
-            variant={statusFilter === 'closed_won' ? 'default' : 'outline'}
-            onClick={() => setStatusFilter('closed_won')}
-            size="sm"
-          >
-            Closed Won
-          </Button>
-        </div>
-      </div>
-
-      {/* Colleges Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredColleges.map((college) => (
-          <Card key={college.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <CardTitle className="text-lg font-semibold text-foreground">
-                    {college.name}
-                  </CardTitle>
-                  <Badge className={`mt-2 ${statusColors[college.status as keyof typeof statusColors]}`}>
-                    {college.status}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  <span>{college.city}, {college.state}</span>
-                </div>
-                {college.phone && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="h-4 w-4" />
-                    <span>{college.phone}</span>
-                  </div>
-                )}
-                {college.email && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Mail className="h-4 w-4" />
-                    <span>{college.email}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Eye className="h-3 w-3 mr-1" />
-                      View Details
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>{college.name}</DialogTitle>
-                    </DialogHeader>
-                    <CollegeDetailView college={college} />
-                  </DialogContent>
-                </Dialog>
-                <Button variant="outline" size="sm">
-                  <Edit className="h-3 w-3" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredColleges.length === 0 && (
-        <div className="text-center py-12">
-          <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No colleges found</h3>
-          <p className="text-muted-foreground mb-4">
-            {searchTerm || statusFilter !== 'all' 
-              ? 'Try adjusting your search or filters'
-              : 'Get started by adding your first college'
-            }
-          </p>
-          <Button onClick={() => setShowCollegeForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="w-4 h-4 mr-2" />
             Add College
           </Button>
         </div>
-      )}
 
-      <CollegeForm open={showCollegeForm} onOpenChange={setShowCollegeForm} />
-    </div>
-  );
-};
-
-const CollegeDetailView = ({ college }: { college: any }) => {
-  return (
-    <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="courses">Courses</TabsTrigger>
-        <TabsTrigger value="pricing">Pricing</TabsTrigger>
-        <TabsTrigger value="activity">Activity</TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="overview" className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Contact Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{college.phone || 'Not provided'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{college.email || 'Not provided'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{college.website || 'Not provided'}</span>
+        {/* Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center gap-3 lg:gap-4">
+                <div className="p-2 lg:p-3 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
+                  <Building2 className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Total</p>
+                  <p className="text-lg lg:text-2xl font-bold text-foreground">{stats.total}</p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Location</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div className="text-sm">
-                  <p>{college.address}</p>
-                  <p>{college.city}, {college.state}</p>
-                  <p>{college.pin_code}</p>
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-yellow-50 to-yellow-100">
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center gap-3 lg:gap-4">
+                <div className="p-2 lg:p-3 rounded-lg bg-gradient-to-br from-yellow-500 to-yellow-600">
+                  <TrendingUp className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Prospects</p>
+                  <p className="text-lg lg:text-2xl font-bold text-foreground">{stats.prospects}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-orange-50 to-orange-100">
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center gap-3 lg:gap-4">
+                <div className="p-2 lg:p-3 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600">
+                  <DollarSign className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Negotiating</p>
+                  <p className="text-lg lg:text-2xl font-bold text-foreground">{stats.negotiations}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-green-50 to-green-100">
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center gap-3 lg:gap-4">
+                <div className="p-2 lg:p-3 rounded-lg bg-gradient-to-br from-green-500 to-green-600">
+                  <BookOpen className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Closed Won</p>
+                  <p className="text-lg lg:text-2xl font-bold text-foreground">{stats.closedWon}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
-      </TabsContent>
-      
-      <TabsContent value="courses">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center py-8">
-              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Course management is available in the dedicated Course Management section.</p>
-              <Button variant="outline" className="mt-4">
-                <BookOpen className="h-4 w-4 mr-2" />
-                Go to Course Management
-              </Button>
+
+        {/* Filters */}
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search colleges..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={statusFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter('all')}
+                  className="text-xs lg:text-sm"
+                >
+                  All
+                </Button>
+                {Object.entries(statusConfig).map(([status, config]) => (
+                  <Button
+                    key={status}
+                    variant={statusFilter === status ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatusFilter(status)}
+                    className="text-xs lg:text-sm"
+                  >
+                    {config.label}
+                  </Button>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
-      </TabsContent>
-      
-      <TabsContent value="pricing">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center py-8">
-              <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Pricing models are managed in the dedicated Pricing Models section.</p>
-              <Button variant="outline" className="mt-4">
-                <DollarSign className="h-4 w-4 mr-2" />
-                Go to Pricing Models
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-      
-      <TabsContent value="activity">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center py-8">
-              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No recent activity</p>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+
+        {/* College Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+          {filteredColleges.map((college: College) => (
+            <Card key={college.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-base lg:text-lg font-semibold text-foreground truncate">
+                      {college.name}
+                    </CardTitle>
+                    <div className="flex items-center gap-1 mt-1">
+                      <MapPin className="h-3 w-3 lg:h-4 lg:w-4 text-muted-foreground" />
+                      <span className="text-xs lg:text-sm text-muted-foreground truncate">{college.location}</span>
+                    </div>
+                  </div>
+                  <Badge className={`${statusConfig[college.status].color} text-xs border`}>
+                    {statusConfig[college.status].label}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-3 w-3 lg:h-4 lg:w-4 text-muted-foreground" />
+                    <span className="text-xs lg:text-sm text-muted-foreground">{college.contact_person}</span>
+                  </div>
+                  
+                  {college.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-3 w-3 lg:h-4 lg:w-4 text-muted-foreground" />
+                      <span className="text-xs lg:text-sm text-muted-foreground truncate">{college.email}</span>
+                    </div>
+                  )}
+                  
+                  {college.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-3 w-3 lg:h-4 lg:w-4 text-muted-foreground" />
+                      <span className="text-xs lg:text-sm text-muted-foreground">{college.phone}</span>
+                    </div>
+                  )}
+                  
+                  {college.website && (
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-3 w-3 lg:h-4 lg:w-4 text-muted-foreground" />
+                      <span className="text-xs lg:text-sm text-muted-foreground truncate">{college.website}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" size="sm" className="flex-1 text-xs lg:text-sm">
+                    View Details
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1 text-xs lg:text-sm">
+                    <Calendar className="h-3 w-3 lg:h-4 lg:w-4 mr-1" />
+                    Schedule
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {filteredColleges.length === 0 && (
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-8 lg:p-12 text-center">
+              <Building2 className="h-12 w-12 lg:h-16 lg:w-16 mx-auto mb-4 text-muted-foreground/50" />
+              <h3 className="text-lg lg:text-xl font-medium text-foreground mb-2">No colleges found</h3>
+              <p className="text-sm lg:text-base text-muted-foreground mb-4">
+                {searchTerm || statusFilter !== 'all' 
+                  ? 'Try adjusting your search criteria or filters.'
+                  : 'Get started by adding your first college partnership.'
+                }
+              </p>
+              {!searchTerm && statusFilter === 'all' && (
+                <Button onClick={() => setShowCollegeForm(true)} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First College
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <CollegeForm open={showCollegeForm} onOpenChange={setShowCollegeForm} />
+    </>
   );
-};
+}
