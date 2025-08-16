@@ -14,6 +14,94 @@ export type Database = {
   }
   public: {
     Tables: {
+      college_courses: {
+        Row: {
+          assigned_at: string
+          college_id: string
+          course_id: string
+          id: string
+          is_active: boolean | null
+          pricing_model_id: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          college_id: string
+          course_id: string
+          id?: string
+          is_active?: boolean | null
+          pricing_model_id?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          college_id?: string
+          course_id?: string
+          id?: string
+          is_active?: boolean | null
+          pricing_model_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "college_courses_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "college_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "college_courses_pricing_model_id_fkey"
+            columns: ["pricing_model_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      college_pricing_models: {
+        Row: {
+          assigned_at: string
+          college_id: string
+          id: string
+          is_active: boolean | null
+          pricing_model_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          college_id: string
+          id?: string
+          is_active?: boolean | null
+          pricing_model_id: string
+        }
+        Update: {
+          assigned_at?: string
+          college_id?: string
+          id?: string
+          is_active?: boolean | null
+          pricing_model_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "college_pricing_models_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "college_pricing_models_pricing_model_id_fkey"
+            columns: ["pricing_model_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       college_tags: {
         Row: {
           college_id: string
@@ -203,7 +291,7 @@ export type Database = {
           base_price: number
           capacity: number
           category: string
-          college_id: string
+          college_id: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -212,13 +300,14 @@ export type Database = {
           max_price: number | null
           min_price: number | null
           name: string
+          pricing_model_id: string | null
           updated_at: string
         }
         Insert: {
           base_price: number
           capacity?: number
           category?: string
-          college_id: string
+          college_id?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -227,13 +316,14 @@ export type Database = {
           max_price?: number | null
           min_price?: number | null
           name: string
+          pricing_model_id?: string | null
           updated_at?: string
         }
         Update: {
           base_price?: number
           capacity?: number
           category?: string
-          college_id?: string
+          college_id?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -242,6 +332,7 @@ export type Database = {
           max_price?: number | null
           min_price?: number | null
           name?: string
+          pricing_model_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -250,6 +341,13 @@ export type Database = {
             columns: ["college_id"]
             isOneToOne: false
             referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_pricing_model_id_fkey"
+            columns: ["pricing_model_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_models"
             referencedColumns: ["id"]
           },
         ]
@@ -402,6 +500,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pricing_models: {
+        Row: {
+          base_price: number
+          conditions: Json | null
+          created_at: string
+          created_by: string
+          description: string | null
+          discount_percentage: number | null
+          id: string
+          is_active: boolean | null
+          markup_percentage: number | null
+          max_price: number | null
+          min_price: number | null
+          name: string
+          pricing_type: string
+          updated_at: string
+        }
+        Insert: {
+          base_price: number
+          conditions?: Json | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          markup_percentage?: number | null
+          max_price?: number | null
+          min_price?: number | null
+          name: string
+          pricing_type?: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          conditions?: Json | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          markup_percentage?: number | null
+          max_price?: number | null
+          min_price?: number | null
+          name?: string
+          pricing_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

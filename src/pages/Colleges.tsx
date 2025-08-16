@@ -8,6 +8,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { CollegeForm } from '@/components/colleges/CollegeForm';
 import { SimplifiedPricingDashboard } from '@/components/colleges/SimplifiedPricingDashboard';
 import { SimplifiedCourseManagement } from '@/components/colleges/SimplifiedCourseManagement';
+import { GlobalCourseManagement } from '@/components/colleges/GlobalCourseManagement';
+import { GlobalPricingManagement } from '@/components/colleges/GlobalPricingManagement';
 import { 
   Building2, 
   MapPin, 
@@ -24,7 +26,8 @@ import {
   Users,
   GraduationCap,
   DollarSign,
-  BookOpen
+  BookOpen,
+  Settings
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -38,6 +41,7 @@ const Colleges = () => {
   const [editingCollege, setEditingCollege] = useState<any>(null);
   const [selectedCollegeId, setSelectedCollegeId] = useState<string | null>(null);
   const [managementView, setManagementView] = useState<'pricing' | 'courses'>('pricing');
+  const [mainView, setMainView] = useState<'colleges' | 'global-courses' | 'global-pricing'>('colleges');
   
   const { data: colleges = [], isLoading } = useColleges();
   const deleteCollege = useDeleteCollege();
@@ -100,27 +104,53 @@ const Colleges = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-              Colleges
+              {mainView === 'colleges' ? 'Colleges' : 
+               mainView === 'global-courses' ? 'Global Course Management' : 
+               'Global Pricing Management'}
             </h1>
-            <p className="text-muted-foreground mt-1">Manage your college partnerships and prospects</p>
+            <p className="text-muted-foreground mt-1">
+              {mainView === 'colleges' ? 'Manage your college partnerships and prospects' :
+               mainView === 'global-courses' ? 'Create and manage courses globally' :
+               'Create and manage pricing models globally'}
+            </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                Add College
-              </Button>
-            </DialogTrigger>
-            <CollegeForm 
-              open={isDialogOpen}
-              onOpenChange={handleDialogOpenChange}
-              college={editingCollege}
-            />
-          </Dialog>
+          
+          <div className="flex gap-2">
+            <Select value={mainView} onValueChange={(value: any) => setMainView(value)}>
+              <SelectTrigger className="w-[200px]">
+                <Settings className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="colleges">College Management</SelectItem>
+                <SelectItem value="global-courses">Global Courses</SelectItem>
+                <SelectItem value="global-pricing">Global Pricing</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {mainView === 'colleges' && (
+              <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+                <DialogTrigger asChild>
+                  <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg w-full sm:w-auto">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add College
+                  </Button>
+                </DialogTrigger>
+                <CollegeForm 
+                  open={isDialogOpen}
+                  onOpenChange={handleDialogOpenChange}
+                  college={editingCollege}
+                />
+              </Dialog>
+            )}
+          </div>
         </div>
 
         {/* Main Content */}
-        {selectedCollegeId ? (
+        {mainView === 'global-courses' && <GlobalCourseManagement />}
+        {mainView === 'global-pricing' && <GlobalPricingManagement />}
+        
+        {mainView === 'colleges' && selectedCollegeId ? (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -170,7 +200,7 @@ const Colleges = () => {
               />
             )}
           </div>
-        ) : (
+        ) : mainView === 'colleges' && (
           <>
             {/* Search and Filter */}
             <Card className="shadow-lg border-0 bg-gradient-to-r from-card to-card/95">
@@ -217,7 +247,6 @@ const Colleges = () => {
               </TabsList>
 
               <TabsContent value="grid" className="space-y-6">
-                {/* College Grid */}
                 <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                   {filteredColleges.map((college) => (
                     <Card key={college.id} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-card to-card/95 overflow-hidden">
@@ -317,7 +346,6 @@ const Colleges = () => {
               </TabsContent>
 
               <TabsContent value="list" className="space-y-4">
-                {/* College List */}
                 {filteredColleges.map((college) => (
                   <Card key={college.id} className="group hover:shadow-lg transition-all duration-200 border-0 shadow-md">
                     <CardContent className="p-4 sm:p-6">
@@ -372,8 +400,8 @@ const Colleges = () => {
                             onClick={() => setSelectedCollegeId(college.id)}
                           >
                             <DollarSign className="h-4 w-4 mr-2" />
-                            <span className="hidden sm:inline">Manage Pricing</span>
-                            <span className="sm:hidden">Pricing</span>
+                            <span className="hidden sm:inline">Manage</span>
+                            <span className="sm:hidden">Manage</span>
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

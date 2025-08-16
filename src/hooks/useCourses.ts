@@ -8,23 +8,43 @@ export type Course = Tables<'courses'>;
 export type CourseInsert = Omit<TablesInsert<'courses'>, 'created_by'>;
 export type CourseUpdate = TablesUpdate<'courses'>;
 
-export const useCourses = (collegeId?: string) => {
+// Get all courses (not filtered by college anymore)
+export const useCourses = () => {
   return useQuery({
-    queryKey: ['courses', collegeId],
+    queryKey: ['courses'],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('courses')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (collegeId) {
-        query = query.eq('college_id', collegeId);
-      }
-
-      const { data, error } = await query;
-
       if (error) {
         console.error('Error fetching courses:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+  });
+};
+
+// Get courses assigned to a specific college
+export const useCollegeAssignedCourses = (collegeId: string) => {
+  return useQuery({
+    queryKey: ['college-assigned-courses', collegeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('college_courses')
+        .select(`
+          *,
+          courses(*),
+          pricing_models(*)
+        `)
+        .eq('college_id', collegeId)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Error fetching college assigned courses:', error);
         throw error;
       }
 
@@ -52,7 +72,7 @@ export const useCreateCourse = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
       toast({ title: "Success", description: "Course created successfully" });
     },
@@ -81,6 +101,7 @@ export const useUpdateCourse = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['college-courses'] });
       toast({ title: "Success", description: "Course updated successfully" });
     },
     onError: (error) => {
@@ -105,6 +126,7 @@ export const useDeleteCourse = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['college-courses'] });
       toast({ title: "Success", description: "Course deleted successfully" });
     },
     onError: (error) => {
