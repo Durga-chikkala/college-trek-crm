@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,7 +36,8 @@ import {
   Percent,
   Calculator
 } from 'lucide-react';
-import { useCourses, useCreateCourse, useUpdateCourse, useDeleteCourse } from '@/hooks/useCourses';
+import { useCollegeCourses } from '@/hooks/useCollegeCourses';
+import { useCourses, useUpdateCourse } from '@/hooks/useCourses';
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, Pie, AreaChart, Area } from 'recharts';
 
 interface AdvancedPricingManagementProps {
@@ -57,10 +57,16 @@ interface PricingRule {
 }
 
 export const AdvancedPricingManagement = ({ collegeId, collegeName }: AdvancedPricingManagementProps) => {
-  const { data: courses = [], isLoading } = useCourses(collegeId);
-  const createCourseMutation = useCreateCourse();
+  const { data: collegeCourses = [], isLoading } = useCollegeCourses(collegeId);
+  const { data: allCourses = [] } = useCourses();
   const updateCourseMutation = useUpdateCourse();
-  const deleteCourseMutation = useDeleteCourse();
+
+  // Extract courses from college courses with their course details
+  const courses = collegeCourses.map(cc => ({
+    ...cc.courses,
+    collegeCourseId: cc.id,
+    pricingModel: cc.pricing_models
+  })).filter(course => course.id); // Filter out any null courses
 
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [bulkOperation, setBulkOperation] = useState<'discount' | 'markup' | 'price-set'>('discount');
